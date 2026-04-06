@@ -147,10 +147,15 @@ const vfunc_allocate = function(box) {
         this._dropPlaceholder.allocate_preferred_size(
             ...this._dropPlaceholder.get_position());
 
-        const laters = global.compositor.get_laters();
-        laters.add(Meta.LaterType.BEFORE_REDRAW, () => {
-            this._dropPlaceholder.hide();
-        });
+        // Only schedule a compositor callback if the placeholder is actually
+        // visible. Without this guard, a BEFORE_REDRAW later is added on
+        // every allocation pass, preventing the GPU from going idle.
+        if (this._dropPlaceholder.visible) {
+            const laters = global.compositor.get_laters();
+            laters.add(Meta.LaterType.BEFORE_REDRAW, () => {
+                this._dropPlaceholder.hide();
+            });
+        }
     }
 
     let childBox = new Clutter.ActorBox();
