@@ -24,6 +24,9 @@ This fork of [mzur/gnome-shell-wsmatrix](https://github.com/mzur/gnome-shell-wsm
 
 - Restyled popup: a frosted, blurred background; a highlight ring that slides between cells; dots on empty workspaces; labels in your accent colour; and an entrance animation. Reduced motion is respected.
 - Touchpad scrolling on the popup moves one cell at a time in both directions.
+- <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd> opens a cell and <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>…<kbd>9</kbd> moves the focused window there. GNOME's own Super+Ctrl+number keys open app windows, so these use the extension's Ctrl+Alt family.
+- <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>BackSpace</kbd> goes back to the previous workspace, like Alt+Tab for workspaces.
+- A map of the grid in the top bar shows the active and occupied cells; click a cell to open it, scroll to move. It can be turned off in preferences.
 - Three- and four-finger swipes move along the current row. Moving along the column is optional, under "Switch rows with vertical touchpad swipes".
 
 **Internals**

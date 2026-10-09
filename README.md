@@ -25,6 +25,8 @@ This is a clone of the [Workspace Grid](https://github.com/zakkak/workspace-grid
 - Workspace switcher popup on all monitors (optional).
 - Workspace grid in the activity overview (optional).
 - Touchpad swipes along the grid rows, and along columns too (optional).
+- <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd> opens a cell (add <kbd>Shift</kbd> to take the focused window), <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>BackSpace</kbd> goes back to the previous workspace.
+- A map of the grid in the top bar: click a cell to open it, scroll to move (optional).
 
 ## Installation
 
