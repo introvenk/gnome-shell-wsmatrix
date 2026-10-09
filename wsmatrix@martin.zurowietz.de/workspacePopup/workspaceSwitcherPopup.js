@@ -107,6 +107,11 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         }
     }
 
+    fadeAndDestroy() {
+        this._fading = true;
+        super.fadeAndDestroy();
+    }
+
     _resetNoModsTimeout() {
         // Disable this function so the custom timeout works.
     }
@@ -180,7 +185,9 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
     _finish(_timestamp) {
         this._disableHover();
         while (modals.length > 0) {
-            modals.pop().fadeAndDestroy();
+            const m = modals.pop();
+            if (!m._fading)
+                m.fadeAndDestroy();
         }
     }
 
@@ -195,10 +202,7 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
 
         super._onDestroy();
 
-        while (modals.length > 0) {
-            modals.pop().destroy();
-        }
-
+        modals = modals.filter(m => m !== this);
     }
 
     vfunc_allocate(box) {

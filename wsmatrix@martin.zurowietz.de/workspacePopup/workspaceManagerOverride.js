@@ -448,14 +448,19 @@ export default class WorkspaceManagerOverride {
         this.monitors.forEach((monitor) => {
             let monitorIndex = monitor.index;
 
-            if (!this.wm._wsPopupList[monitorIndex]) {
+            const existing = this.wm._wsPopupList[monitorIndex];
+            if (!existing || existing._fading) {
                 this.wm._workspaceTracker.blockUpdates();
-                this.wm._wsPopupList[monitorIndex] = this._createNewPopup({
+                const popup = this._createNewPopup({
                     monitorIndex: monitorIndex,
                     toggle: toggle,
                 });
-                this.wm._wsPopupList[monitorIndex].connect('destroy', () => {
+                this.wm._wsPopupList[monitorIndex] = popup;
+                popup.connect('destroy', () => {
                     this.wm._workspaceTracker.unblockUpdates();
+                    // A newer popup may have replaced this one while it was fading out.
+                    if (this.wm._wsPopupList[monitorIndex] !== popup)
+                        return;
                     this.wm._wsPopupList[monitorIndex] = null;
                     if (monitorIndex === Main.layoutManager.primaryIndex) {
                         this.wm._workspaceSwitcherPopup = null;
