@@ -2,25 +2,21 @@ import GObject from 'gi://GObject';
 import {BackgroundManager} from 'resource:///org/gnome/shell/ui/background.js';
 import {WorkspaceThumbnail as GWorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 
+// Shell thumbnails (GNOME 40+) don't draw the wallpaper; add it, tied to the thumbnail's life.
+export function addBackground(thumbnail) {
+    const bgManager = new BackgroundManager({
+        monitorIndex: thumbnail.monitorIndex,
+        container: thumbnail._contents,
+        vignette: false,
+    });
+    // The shared Background outlives the thumbnail and would keep it alive.
+    thumbnail.connect('destroy', () => bgManager.destroy());
+}
+
 export default GObject.registerClass(
 class WorkspaceThumbnail extends GWorkspaceThumbnail {
     _init(metaWorkspace, monitorIndex) {
         super._init(metaWorkspace, monitorIndex);
-
-        // gnome 40 thumbnails don't show background wallpaper anymore
-        this._createBackground();
-    }
-
-    _createBackground() {
-        this._bgManager = new BackgroundManager({
-            monitorIndex: this.monitorIndex,
-            container: this._contents,
-            vignette: false
-        });
-        // The shared Background outlives the popup and would keep the thumbnail alive.
-        this.connect('destroy', () => {
-            this._bgManager?.destroy();
-            this._bgManager = null;
-        });
+        addBackground(this);
     }
 });

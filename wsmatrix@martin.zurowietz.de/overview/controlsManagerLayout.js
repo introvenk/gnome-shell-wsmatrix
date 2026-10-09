@@ -2,50 +2,28 @@ import Override from '../Override.js';
 import {overview} from 'resource:///org/gnome/shell/ui/main.js';
 import {SMALL_WORKSPACE_RATIO, ControlsState} from 'resource:///org/gnome/shell/ui/overviewControls.js';
 
-// Not exported by the shell; values from ui/overviewControls.js (GNOME 47+).
-const THUMBNAILS_SPACING_ADJUSTMENT_TOP = 0.6;
-const THUMBNAILS_SPACING_ADJUSTMENT_BOTTOM = 0.4;
-
-const _computeWorkspacesBoxForState = function(state, box, searchHeight, dashHeight, thumbnailsHeight, spacing) {
-    const workspaceBox = box.copy();
-    const [width, height] = workspaceBox.get_size();
-    const {y1: startY} = this._workAreaBox;
-    const {expandFraction} = this._workspacesThumbnails;
-
-    const workspaceManager = global.workspace_manager;
-    const rows = workspaceManager.layout_rows;
-
-    switch (state) {
-    case ControlsState.HIDDEN:
-        workspaceBox.set_origin(...this._workAreaBox.get_origin());
-        workspaceBox.set_size(...this._workAreaBox.get_size());
-        break;
-    case ControlsState.WINDOW_PICKER:
-        workspaceBox.set_origin(0,
-            startY + searchHeight + Math.round(spacing * THUMBNAILS_SPACING_ADJUSTMENT_TOP) +
-            thumbnailsHeight * rows + Math.round(spacing * THUMBNAILS_SPACING_ADJUSTMENT_BOTTOM) * expandFraction);
-        workspaceBox.set_size(width,
-            height -
-            dashHeight - spacing -
-            searchHeight - Math.round(spacing * THUMBNAILS_SPACING_ADJUSTMENT_TOP) -
-            thumbnailsHeight * rows - Math.round(spacing * THUMBNAILS_SPACING_ADJUSTMENT_BOTTOM) * expandFraction);
-        break;
-    case ControlsState.APP_GRID:
-        workspaceBox.set_origin(0, startY + searchHeight + spacing);
-        workspaceBox.set_size(
-            width,
-            Math.round(height * rows * SMALL_WORKSPACE_RATIO));
-        break;
-    }
-
-    return workspaceBox;
-}
+// Room for the app-grid workspaces when there are several rows. Scaling by the full row
+// count squeezed the app grid until icons overlapped; the stock single-row size made the
+// grid unreadable.
+const APP_GRID_MAX_GROWTH = 1.6;
 
 export default class ControlsManagerLayout extends Override {
     enable() {
         const subject = overview._overview._controls.layout_manager;
-        this._im.overrideMethod(subject, '_computeWorkspacesBoxForState', (original) => {
-            return _computeWorkspacesBoxForState.bind(subject);
-        });
+        // The thumbnails strip is `rows` thumbnails tall; let the shell lay out the rest.
+        this._im.overrideMethod(subject, '_computeWorkspacesBoxForState', original =>
+            function (state, box, searchHeight, dashHeight, thumbnailsHeight, spacing) {
+                const rows = global.workspace_manager.layout_rows;
+                const workspaceBox = original.call(this,
+                    state, box, searchHeight, dashHeight, thumbnailsHeight * rows, spacing);
+
+                if (state === ControlsState.APP_GRID && rows > 1) {
+                    const growth = Math.min(rows, APP_GRID_MAX_GROWTH);
+                    workspaceBox.set_size(box.get_width(),
+                        Math.round(box.get_height() * SMALL_WORKSPACE_RATIO * growth));
+                }
+
+                return workspaceBox;
+            });
     }
 }
