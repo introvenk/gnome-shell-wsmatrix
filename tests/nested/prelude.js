@@ -29,6 +29,8 @@ const T = {
 const _origEnable = WsmatrixExtension.prototype.enable;
 let _started = false;
 WsmatrixExtension.prototype.enable = function () {
+    // The layout as the shell had it before the extension first touched it.
+    T.initialLayout ??= [global.workspace_manager.layout_rows, global.workspace_manager.layout_columns];
     _origEnable.call(this);
     // Scenarios disable and re-enable the extension; run the steps only once.
     if (_started)
@@ -43,14 +45,21 @@ WsmatrixExtension.prototype.enable = function () {
     const steps = [[1500, () => TMain.overview.hide()], [2000, () => T.goTo(0)], ...scenario(ext, T)];
     const end = Math.max(...steps.map(([ms]) => ms)) + 1000;
     steps.push([end, () => T.log('DONE')], [end + 500, () => global.context.terminate()]);
-    for (const [ms, fn] of steps) {
-        GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
-            try {
-                fn();
-            } catch (e) {
-                T.log(`ERR ${e}\n${e.stack}`);
-            }
-            return GLib.SOURCE_REMOVE;
-        });
-    }
+    const run = () => {
+        for (const [ms, fn] of steps) {
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, ms, () => {
+                try {
+                    fn();
+                } catch (e) {
+                    T.log(`ERR ${e}\n${e.stack}`);
+                }
+                return GLib.SOURCE_REMOVE;
+            });
+        }
+    };
+    // The shell opens the overview once startup completes; start the clock after that.
+    if (TMain.layoutManager._startingUp)
+        TMain.layoutManager.connect('startup-complete', run);
+    else
+        run();
 };

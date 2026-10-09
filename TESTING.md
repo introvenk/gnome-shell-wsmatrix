@@ -8,9 +8,11 @@
 |---|---|
 | `popup` | Keyboard switching and rapid key presses |
 | `scroll` | Touchpad scrolling on the open popup |
-| `cycle` | Switching still works after disable and re-enable (what lock and unlock do) |
+| `grab` | The popup never keeps the keyboard grab, and Super+W closes what it opened (#200, #250, #265) |
+| `cycle` | Switching after disable and re-enable (what lock and unlock do); disable restores the layout and leaves a working overview (#216, #179) |
 | `overview` | Drop targets and clicks on every row, strip height, which rows are shown and clipped, app grid |
 | `swipe` | Horizontal and vertical swipes, the popup after a swipe, restoring GNOME's gestures |
+| `multimonitor` | Run with `MONITORS=2`: one grab for all popups, closing one closes all, overview grid on the second monitor (#224, #253, #255) |
 
 Requirements:
 
@@ -61,5 +63,10 @@ Run these after logging back in on a new build.
 20. The popup doesn't get slower over time.
 21. Windows stay on their workspaces after unlocking.
 22. With Settings → Accessibility → Reduce Animation on, the popup fades without zooming or sliding.
+
+**Second monitor**
+
+23. Unplug the external monitor while the Super+W popup is open, then keep switching for a minute. GNOME Shell must not crash (#257). The nested shell can't test this: mutter itself crashes when its virtual monitors are reconfigured.
+24. With "Show popup for all monitors" on, the mouse selects workspaces in the primary monitor's popup, and clicking outside closes the popups on every monitor.
 
 If anything fails, include `journalctl --user -b -g wsmatrix` in the report.

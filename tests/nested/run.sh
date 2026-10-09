@@ -24,8 +24,11 @@ cat "$DIR/$NAME.js" >> "$OUT/ext/extension.js"
 
 trap 'gnome-extensions install --force "$UUID.zip"' EXIT
 gnome-extensions install --force "$OUT/test.zip"
+# MONITORS=2 adds a second virtual monitor for the multi-monitor scenarios.
+extra=()
+[ "${MONITORS:-1}" -ge 2 ] && extra=(--virtual-monitor 1280x800)
 MUTTER_DEBUG_DUMMY_MODE_SPECS=1600x900 timeout "${TIMEOUT:-30}" \
-    dbus-run-session gnome-shell --devkit --wayland > "$OUT/shell.log" 2>&1 || true
+    dbus-run-session gnome-shell --devkit --wayland "${extra[@]}" > "$OUT/shell.log" 2>&1 || true
 
 grep -o 'WSMTEST .*' "$OUT/shell.log" | sed 's/^WSMTEST //' || true
 # JS errors whose stack points into the extension (the shell logs unrelated ones too).
