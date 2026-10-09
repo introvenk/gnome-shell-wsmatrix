@@ -26,7 +26,7 @@ This fork of [mzur/gnome-shell-wsmatrix](https://github.com/mzur/gnome-shell-wsm
 - Touchpad scrolling on the popup moves one cell at a time in both directions.
 - <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd> opens a cell and <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+<kbd>1</kbd>…<kbd>9</kbd> moves the focused window there. GNOME's own Super+Ctrl+number keys open app windows, so these use the extension's Ctrl+Alt family.
 - <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>BackSpace</kbd> goes back to the previous workspace, like Alt+Tab for workspaces.
-- The Activities button shows the grid as dots in the shell's own style (the active dot is full size, workspaces with windows are brighter, the highlight glides between cells) instead of a single row. Scroll over it to move through the grid. It can be turned off in preferences.
+- The Activities button shows the grid as dots in the shell's own style (a pill marks the active workspace and glides between cells, workspaces with windows are brighter, larger grids shrink to fit the bar, dots scale in and out when the grid changes, and screen readers hear the position) instead of a single row. Scroll over it to move through the grid. It can be turned off in preferences.
 - Three- and four-finger swipes move along the current row. Moving along the column is optional, under "Switch rows with vertical touchpad swipes".
 
 **Internals**
