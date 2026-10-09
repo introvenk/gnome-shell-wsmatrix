@@ -14,6 +14,10 @@ This fork of [mzur/gnome-shell-wsmatrix](https://github.com/mzur/gnome-shell-wsm
 - In the overview, clicking or dropping a window on any grid row picks that row (#259, #274). The thumbnail strip is tall enough for every row, rows have spacing, and the highlight moves straight to the new thumbnail.
 - In the overview, switching rows moves straight to the target. Other rows no longer draw over the thumbnails or the dash, and window previews in other rows keep their size.
 - Vertical switch animations start in the right place. Before, they started slightly off and logged a NaN warning unless the switch started on workspace 0.
+- The popup never keeps the keyboard grab, so a window always has focus after a switch (#200, #250).
+- <kbd>Super</kbd>+<kbd>W</kbd> closes the popup it opened, even when confirm is bound to the same keys (#265).
+- With popups on several monitors, the mouse works in the primary monitor's popup, and clicking outside closes them all (#224, #253).
+- Popups are closed when monitors change, so unplugging a monitor doesn't leave stale thumbnails behind (#257, still needs testing on real hardware). Disabling restores the workspace layout that was set before (#216).
 - The shell no longer logs an "Unmatched call to unblockWorkspaceUpdates()" warning on every switch, and the overview no longer schedules a redraw on every layout pass.
 
 **Features**
