@@ -25,7 +25,7 @@ const vfunc_get_preferred_height = function (forWidth) {
     let scale = (avail / columns) / this._porthole.width;
     scale = Math.min(scale, this._maxThumbnailScale);
 
-    const height = Math.round(this._porthole.height * scale);
+    const height = Math.round(this._porthole.height * scale) * rows + (rows - 1) * spacing;
     return themeNode.adjust_preferred_height(height, height);
 }
 
@@ -65,8 +65,6 @@ const vfunc_allocate = function(box) {
     const rows = workspaceManager.layout_rows;
     const columns = workspaceManager.layout_columns;
     const activeIndex = workspaceManager.get_active_workspace_index();
-    const targetRow = Math.floor(activeIndex / columns);
-    const targetColumn = activeIndex % columns;
 
     let rtl = Clutter.get_default_text_direction() == Clutter.TextDirection.RTL;
 
@@ -87,7 +85,8 @@ const vfunc_allocate = function(box) {
         const availableWidth = (box.get_width() - totalSpacing) / columns;
 
         const hScale = availableWidth / portholeWidth;
-        const vScale = box.get_height() / portholeHeight;
+        const availableHeight = (box.get_height() - (rows - 1) * spacing) / rows;
+        const vScale = availableHeight / portholeHeight;
         const newScale = Math.min(hScale, vScale);
 
         if (newScale !== this._targetScale) {
@@ -118,21 +117,17 @@ const vfunc_allocate = function(box) {
         (this._maxThumbnailScale * portholeWidth - thumbnailWidth) * columns;
     box.x1 += Math.round(extraWidth / 2);
     box.x2 -= Math.round(extraWidth / 2);
-    box.y2 = box.y1 + (thumbnailHeight * rows);
+    box.y2 = box.y1 + thumbnailHeight * rows + (rows - 1) * spacing;
 
-
-    let indicatorValue = this._scrollAdjustment.value;
-    let indicatorUpperWs = Math.ceil(indicatorValue);
-    let indicatorLowerWs = Math.floor(indicatorValue);
-
-    let indicatorLowerX1 = 0;
-    let indicatorLowerX2 = 0;
-    let indicatorUpperX1 = 0;
-    let indicatorUpperX2 = 0;
-    let indicatorLowerY1 = 0;
-    let indicatorLowerY2 = 0;
-    let indicatorUpperY1 = 0;
-    let indicatorUpperY2 = 0;
+    // The scroll value walks through every index between the old and new workspace,
+    // so following floor/ceil of it slides the indicator along the row and wraps.
+    // Remember the switch endpoints and move straight between their thumbnails.
+    const indicatorValue = this._scrollAdjustment.value;
+    if (this._wsmatrixIndicatorTo !== activeIndex) {
+        this._wsmatrixIndicatorFrom = this._wsmatrixIndicatorTo ?? activeIndex;
+        this._wsmatrixIndicatorTo = activeIndex;
+    }
+    const thumbnailBoxes = [];
 
     let indicatorThemeNode = this._indicator.get_theme_node();
     let indicatorTopFullBorder = indicatorThemeNode.get_padding(St.Side.TOP) + indicatorThemeNode.get_border_width(St.Side.TOP);
@@ -216,40 +211,40 @@ const vfunc_allocate = function(box) {
         thumbnail.setScale(roundedHScale, roundedVScale);
         thumbnail.allocate(childBox);
 
-        if (i === indicatorUpperWs) {
-            indicatorUpperX1 = childBox.x1;
-            indicatorUpperX2 = childBox.x2;
-            indicatorUpperY1 = childBox.y1;
-            indicatorUpperY2 = childBox.y2;
-        }
-        if (i === indicatorLowerWs) {
-            indicatorLowerX1 = childBox.x1;
-            indicatorLowerX2 = childBox.x2;
-            indicatorLowerY1 = childBox.y1;
-            indicatorLowerY2 = childBox.y2;
-        }
+        thumbnailBoxes[i] = [childBox.x1, childBox.x2, childBox.y1, childBox.y2];
 
         // We round the collapsing portion so that we don't get thumbnails resizing
         // during an animation due to differences in rounded, but leave the uncollapsed
         // portion unrounded so that non-animating we end up with the right total
         if ((i + 1) % columns === 0) {
-            y += thumbnailHeight - Math.round(thumbnailHeight * thumbnail.collapse_fraction);
+            y += thumbnailHeight - Math.round(thumbnailHeight * thumbnail.collapse_fraction) +
+                spacing - Math.round(spacing * thumbnail.collapse_fraction);
         } else {
             x += thumbnailWidth - Math.round(thumbnailWidth * thumbnail.collapse_fraction);
         }
     }
 
-    childBox.y1 = box.y1 + thumbnailHeight * targetRow;
-    childBox.y2 = childBox.y1 + thumbnailHeight;
-
-    const indicatorX1 = indicatorLowerX1 +
-        (indicatorUpperX1 - indicatorLowerX1) * (indicatorValue % 1);
-    const indicatorX2 = indicatorLowerX2 +
-        (indicatorUpperX2 - indicatorLowerX2) * (indicatorValue % 1);
-    const indicatorY1 = indicatorLowerY1 +
-        (indicatorUpperY1 - indicatorLowerY1) * (indicatorValue % 1);
-    const indicatorY2 = indicatorLowerY2 +
-        (indicatorUpperY2 - indicatorLowerY2) * (indicatorValue % 1);
+    const from = this._wsmatrixIndicatorFrom;
+    const to = this._wsmatrixIndicatorTo;
+    let lowerBox, upperBox, fraction;
+    if (from !== to && thumbnailBoxes[from] && thumbnailBoxes[to] &&
+        (indicatorValue - from) * (to - from) >= 0 &&
+        Math.abs(indicatorValue - from) <= Math.abs(to - from)) {
+        lowerBox = thumbnailBoxes[from];
+        upperBox = thumbnailBoxes[to];
+        fraction = (indicatorValue - from) / (to - from);
+    } else {
+        // At rest or during a gesture: follow the neighbouring indices.
+        lowerBox = thumbnailBoxes[Math.floor(indicatorValue)] ?? thumbnailBoxes[activeIndex];
+        upperBox = thumbnailBoxes[Math.ceil(indicatorValue)] ?? lowerBox;
+        fraction = indicatorValue % 1;
+    }
+    const [lX1, lX2, lY1, lY2] = lowerBox;
+    const [uX1, uX2, uY1, uY2] = upperBox;
+    const indicatorX1 = lX1 + (uX1 - lX1) * fraction;
+    const indicatorX2 = lX2 + (uX2 - lX2) * fraction;
+    const indicatorY1 = lY1 + (uY1 - lY1) * fraction;
+    const indicatorY2 = lY2 + (uY2 - lY2) * fraction;
 
     childBox.x1 = indicatorX1 - indicatorLeftFullBorder;
     childBox.x2 = indicatorX2 + indicatorRightFullBorder;
@@ -257,6 +252,13 @@ const vfunc_allocate = function(box) {
     childBox.y2 = indicatorY2 + indicatorBottomFullBorder;
     this._indicator.allocate(childBox);
 }
+
+// True when no drag is tracked or the drag y lies in the thumbnail's row.
+const withinDragRow = function (index) {
+    const thumbnail = this._thumbnails[index];
+    const y = this._wsmatrixDragY;
+    return y === undefined || !thumbnail || (y > thumbnail.y && y <= thumbnail.y + thumbnail.height);
+};
 
 export default class ThumbnailsBox extends Override {
     enable() {
@@ -278,11 +280,38 @@ export default class ThumbnailsBox extends Override {
 
         this._im.overrideMethod(subject, '_withinWorkspace', original =>
             function (x, index, rtl) {
-                const thumbnail = this._thumbnails[index];
-                const y = this._wsmatrixDragY;
-                return original.call(this, x, index, rtl) &&
-                    (y === undefined || (y > thumbnail.y && y <= thumbnail.y + thumbnail.height));
+                return withinDragRow.call(this, index) && original.call(this, x, index, rtl);
             });
+
+        // Same for the gaps where a drop creates a new workspace.
+        this._im.overrideMethod(subject, '_getPlaceholderTarget', original =>
+            function (index, spacing, rtl) {
+                return withinDragRow.call(this, index)
+                    ? original.call(this, index, spacing, rtl)
+                    : [Infinity, Infinity];
+            });
+
+        // The shell picks the clicked thumbnail by x only, so a click on a lower row
+        // opened the first row's workspace (#259).
+        this._im.overrideMethod(subject, '_activateThumbnailAtPoint', () =>
+            function (x, y, time) {
+                const thumbnail = this._thumbnails.find(t =>
+                    x >= t.x && x <= t.x + t.width && y >= t.y && y <= t.y + t.height);
+                thumbnail?.activate(time);
+            });
+
+        // The overview caps the strip at one thumbnail's height; allow the whole grid.
+        this._maxScaleDescriptor = Object.getOwnPropertyDescriptor(subject, 'maxThumbnailScale');
+        const {get} = this._maxScaleDescriptor;
+        Object.defineProperty(subject, 'maxThumbnailScale', {
+            configurable: true,
+            get() {
+                const rows = global.workspace_manager.layout_rows;
+                const rowSpacing = this._porthole
+                    ? (rows - 1) * this.get_theme_node().get_length('spacing') / this._porthole.height : 0;
+                return get.call(this) * rows + rowSpacing;
+            },
+        });
 
         this._im.overrideMethod(subject, 'vfunc_get_preferred_height', (original) => {
             return function () {
@@ -301,5 +330,13 @@ export default class ThumbnailsBox extends Override {
                 return vfunc_allocate.call(this, ...arguments);
             };
         });
+    }
+
+    disable() {
+        if (this._maxScaleDescriptor) {
+            Object.defineProperty(GThumbnailsBox.prototype, 'maxThumbnailScale', this._maxScaleDescriptor);
+            this._maxScaleDescriptor = null;
+        }
+        super.disable();
     }
 }

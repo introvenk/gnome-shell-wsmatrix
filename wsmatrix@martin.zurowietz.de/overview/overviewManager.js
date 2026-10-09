@@ -1,5 +1,4 @@
 import ControlsManagerLayout from './controlsManagerLayout.js';
-import SecondaryMonitorDisplay from './secondaryMonitorDisplay.js';
 import ThumbnailsBox from './thumbnailsBox.js';
 import WorkspacesView from './workspacesView.js';
 
@@ -8,7 +7,6 @@ export default class OverviewManager {
         this._settings = settings;
         this._overrides = [
             new WorkspacesView(),
-            new SecondaryMonitorDisplay(),
             new ThumbnailsBox(),
             new ControlsManagerLayout(),
         ];

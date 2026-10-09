@@ -10,12 +10,11 @@ const APP_GRID_MAX_GROWTH = 1.6;
 export default class ControlsManagerLayout extends Override {
     enable() {
         const subject = overview._overview._controls.layout_manager;
-        // The thumbnails strip is `rows` thumbnails tall; let the shell lay out the rest.
+        // Give the app-grid workspaces room for several rows.
         this._im.overrideMethod(subject, '_computeWorkspacesBoxForState', original =>
-            function (state, box, searchHeight, dashHeight, thumbnailsHeight, spacing) {
+            function (state, box, ...args) {
                 const rows = global.workspace_manager.layout_rows;
-                const workspaceBox = original.call(this,
-                    state, box, searchHeight, dashHeight, thumbnailsHeight * rows, spacing);
+                const workspaceBox = original.call(this, state, box, ...args);
 
                 if (state === ControlsState.APP_GRID && rows > 1) {
                     const growth = Math.min(rows, APP_GRID_MAX_GROWTH);
