@@ -23,6 +23,7 @@ export default class WorkspaceManagerOverride {
         this.settings = settings;
         this._mutterSettings = new Gio.Settings({schema_id: 'org.gnome.mutter'});
         this.wsManager = global.workspace_manager;
+        this._originalLayout = [this.wsManager.layout_rows, this.wsManager.layout_columns];
         this.originalDynamicWorkspaces = this._mutterSettings.get_boolean('dynamic-workspaces');
         this.originalAllowedKeybindings = {};
         this._keybindings = keybindings;
@@ -153,7 +154,11 @@ export default class WorkspaceManagerOverride {
     }
 
     _connectLayoutManager() {
-        Main.layoutManager.connectObject('monitors-changed', this._updateMonitors.bind(this), this);
+        // Popups hold thumbnails for the old monitors; drop them first (#257).
+        Main.layoutManager.connectObject('monitors-changed', () => {
+            this._destroyWorkspaceSwitcherPopup();
+            this._updateMonitors();
+        }, this);
     }
 
     _disconnectLayoutManager() {
@@ -252,11 +257,13 @@ export default class WorkspaceManagerOverride {
     }
 
     _restoreLayout() {
+        // Back to what was set before enable, which may be another extension's layout (#216).
+        const [rows, columns] = this._originalLayout;
         this.wsManager.override_workspace_layout(
             Meta.DisplayCorner.TOPLEFT, // workspace 0
             false, // true == lay out in columns. false == lay out in rows
-            1,
-            -1
+            rows,
+            columns
         );
     }
 
