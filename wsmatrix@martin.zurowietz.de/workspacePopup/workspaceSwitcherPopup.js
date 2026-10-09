@@ -3,6 +3,7 @@ import Clutter from 'gi://Clutter';
 import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
 import WorkspaceSwitcherPopupList from "./workspaceSwitcherPopupList.js";
 import WorkspaceThumbnail from "./workspaceThumbnail.js";
@@ -13,6 +14,14 @@ var modals = [];
 const ENTRANCE_TIME = 120;
 const ENTRANCE_SCALE = 0.96;
 const INDICATOR_TIME = 150;
+const BLUR_RADIUS = 40;
+// Background blur is rectangular; insetting it by this fraction of the corner radius keeps
+// its corners inside the rounded popup outline (1 - 1/sqrt(2) ~= 0.29).
+const BLUR_CORNER_INSET = 0.3;
+
+function reducedMotion() {
+    return St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
+}
 
 export default GObject.registerClass(
 class WorkspaceSwitcherPopup extends SwitcherPopup {
@@ -29,6 +38,10 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         this._switcherList = new WorkspaceSwitcherPopupList(this._items, this._createLabels(), options);
         this._overviewKeybindingActions = options.overveiwKeybindingActions;
         this._noModsTimeoutId = 0;
+
+        this._backdrop = new St.Widget({
+            effect: new Shell.BlurEffect({mode: Shell.BlurMode.BACKGROUND, radius: BLUR_RADIUS, brightness: 0.9}),
+        });
 
         // Ring that glides between cells; drawn above the list, moved by translation only.
         this._indicator = new St.Widget({style_class: 'ws-switcher-selection', opacity: 0});
@@ -109,6 +122,7 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         }
 
         if (this.show(backward, binding, mask)) {
+            this.insert_child_below(this._backdrop, this._switcherList);
             this.add_child(this._indicator);
             this._showImmediately();
             this._animateEntrance();
@@ -123,13 +137,16 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
 
     _animateEntrance() {
         const list = this._switcherList;
-        list.set_pivot_point(0.5, 0.5);
-        list.set_scale(ENTRANCE_SCALE, ENTRANCE_SCALE);
         this.opacity = 0;
 
         const params = {duration: ENTRANCE_TIME, mode: Clutter.AnimationMode.EASE_OUT_QUAD};
         this.ease({opacity: 255, ...params});
-        list.ease({scale_x: 1, scale_y: 1, ...params});
+        // Reduced motion keeps the fades, drops the movement (as the shell's own popups do).
+        if (!reducedMotion()) {
+            list.set_pivot_point(0.5, 0.5);
+            list.set_scale(ENTRANCE_SCALE, ENTRANCE_SCALE);
+            list.ease({scale_x: 1, scale_y: 1, ...params});
+        }
         // The ring follows once the list has settled so it never sits on a scaling cell.
         this._indicator.ease({opacity: 255, delay: ENTRANCE_TIME, ...params});
     }
@@ -155,7 +172,7 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
             return;
 
         this._indicator.set_size(target.width, target.height);
-        if (animate && this._indicatorPlaced) {
+        if (animate && this._indicatorPlaced && !reducedMotion()) {
             this._indicator.ease({
                 translation_x: target.x,
                 translation_y: target.y,
@@ -256,6 +273,8 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
 
         if (!this._indicator.get_parent())
             this._indicator.destroy();
+        if (!this._backdrop.get_parent())
+            this._backdrop.destroy();
 
         this._items.forEach((x) => x.destroy());
         this._items = [];
@@ -282,6 +301,15 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         childBox.y1 = this._monitor.y + Math.floor((this._monitor.height - childNaturalHeight) / 2);
         childBox.y2 = childBox.y1 + childNaturalHeight;
         this._switcherList.allocate(childBox);
+
+        if (this._backdrop.get_parent() === this) {
+            const radius = this._switcherList.get_theme_node().get_border_radius(St.Corner.TOPLEFT);
+            const inset = Math.ceil(radius * BLUR_CORNER_INSET);
+            this._backdrop.allocate(new Clutter.ActorBox({
+                x1: childBox.x1 + inset, y1: childBox.y1 + inset,
+                x2: childBox.x2 - inset, y2: childBox.y2 - inset,
+            }));
+        }
 
         if (this._indicator.get_parent() === this) {
             const target = this._indicatorTarget();
