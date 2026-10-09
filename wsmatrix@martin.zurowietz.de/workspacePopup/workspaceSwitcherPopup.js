@@ -10,6 +10,10 @@ import {SwitcherPopup} from 'resource:///org/gnome/shell/ui/switcherPopup.js';
 
 var modals = [];
 
+const ENTRANCE_TIME = 120;
+const ENTRANCE_SCALE = 0.96;
+const INDICATOR_TIME = 150;
+
 export default GObject.registerClass(
 class WorkspaceSwitcherPopup extends SwitcherPopup {
     _init(options, wm) {
@@ -25,6 +29,10 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         this._switcherList = new WorkspaceSwitcherPopupList(this._items, this._createLabels(), options);
         this._overviewKeybindingActions = options.overveiwKeybindingActions;
         this._noModsTimeoutId = 0;
+
+        // Ring that glides between cells; drawn above the list, moved by translation only.
+        this._indicator = new St.Widget({style_class: 'ws-switcher-selection', opacity: 0});
+        this._switcherList.connect('highlight-changed', () => this._updateIndicator(true));
 
         // Initially disable hover so we ignore the enter-event if
         // the switcher appears underneath the current pointer location
@@ -101,8 +109,9 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         }
 
         if (this.show(backward, binding, mask)) {
+            this.add_child(this._indicator);
             this._showImmediately();
-            this.opacity = 255;
+            this._animateEntrance();
             modals.push(this);
         }
     }
@@ -110,6 +119,54 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
     fadeAndDestroy() {
         this._fading = true;
         super.fadeAndDestroy();
+    }
+
+    _animateEntrance() {
+        const list = this._switcherList;
+        list.set_pivot_point(0.5, 0.5);
+        list.set_scale(ENTRANCE_SCALE, ENTRANCE_SCALE);
+        this.opacity = 0;
+
+        const params = {duration: ENTRANCE_TIME, mode: Clutter.AnimationMode.EASE_OUT_QUAD};
+        this.ease({opacity: 255, ...params});
+        list.ease({scale_x: 1, scale_y: 1, ...params});
+        // The ring follows once the list has settled so it never sits on a scaling cell.
+        this._indicator.ease({opacity: 255, delay: ENTRANCE_TIME, ...params});
+    }
+
+    _indicatorTarget() {
+        const list = this._switcherList;
+        const item = list._items[list._highlighted];
+        if (!item || !item.has_allocation())
+            return null;
+
+        const row = item.get_parent();
+        return {
+            x: list.x + row.x + item.x,
+            y: list.y + row.y + item.y,
+            width: item.width,
+            height: item.height,
+        };
+    }
+
+    _updateIndicator(animate) {
+        const target = this._indicatorTarget();
+        if (!target)
+            return;
+
+        this._indicator.set_size(target.width, target.height);
+        if (animate && this._indicatorPlaced) {
+            this._indicator.ease({
+                translation_x: target.x,
+                translation_y: target.y,
+                duration: INDICATOR_TIME,
+                mode: Clutter.AnimationMode.EASE_OUT_QUAD,
+            });
+        } else {
+            this._indicator.translation_x = target.x;
+            this._indicator.translation_y = target.y;
+        }
+        this._indicatorPlaced = true;
     }
 
     _resetNoModsTimeout() {
@@ -197,6 +254,9 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
             this._noModsTimeoutId = 0;
         }
 
+        if (!this._indicator.get_parent())
+            this._indicator.destroy();
+
         this._items.forEach((x) => x.destroy());
         this._items = [];
 
@@ -222,5 +282,14 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         childBox.y1 = this._monitor.y + Math.floor((this._monitor.height - childNaturalHeight) / 2);
         childBox.y2 = childBox.y1 + childNaturalHeight;
         this._switcherList.allocate(childBox);
+
+        if (this._indicator.get_parent() === this) {
+            const target = this._indicatorTarget();
+            if (target) {
+                this._indicator.allocate(new Clutter.ActorBox({x1: 0, y1: 0, x2: target.width, y2: target.height}));
+                if (!this._indicator.get_transition('translation-x'))
+                    this._updateIndicator(false);
+            }
+        }
     }
 });

@@ -5,6 +5,8 @@ import St from 'gi://St';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 
 var ITEM_SPACING = '12px';
+const DIM_OPACITY = 217; // ~85%, keeps the target cell the visual anchor
+const HIGHLIGHT_TIME = 150;
 
 var SwitcherButton = GObject.registerClass(
 class SwitcherButton extends St.Button {
@@ -32,7 +34,8 @@ export default GObject.registerClass({
     Signals: {
         'item-activated': {param_types: [GObject.TYPE_INT]},
         'item-entered': {param_types: [GObject.TYPE_INT]},
-        'item-removed': {param_types: [GObject.TYPE_INT]}
+        'item-removed': {param_types: [GObject.TYPE_INT]},
+        'highlight-changed': {param_types: [GObject.TYPE_INT]},
     },
 }, class WorkspaceSwitcherPopupList extends St.BoxLayout {
     _init(thumbnails, workspaceName, options) {
@@ -111,6 +114,19 @@ export default GObject.registerClass({
             container.add_child(labelBox);
         }
 
+        // Faint dot marking a workspace without windows.
+        bbox._emptyDot = new St.Widget({
+            style_class: 'ws-switcher-empty-dot',
+            x_expand: true,
+            y_expand: true,
+            x_align: Clutter.ActorAlign.CENTER,
+            y_align: Clutter.ActorAlign.CENTER,
+        });
+        let dotBox = new SwitcherButton(this._childWidth, this._childHeight);
+        dotBox.set_child(bbox._emptyDot);
+        dotBox.reactive = false;
+        container.add_child(dotBox);
+
         bbox.set_child(container);
         list.add_child(bbox);
 
@@ -144,7 +160,8 @@ export default GObject.registerClass({
                 if (item instanceof SwitcherButton) {
                     item.setSize(this._childWidth - leftPadding - rightPadding, this._childHeight - topPadding - bottomPadding);
                     let label = item.get_child();
-                    label.style = 'font-size: ' + Math.min(this._childHeight, this._childWidth) / 8 + 'px;';
+                    if (label instanceof St.Label)
+                        label.style = 'font-size: ' + Math.min(this._childHeight, this._childWidth) / 8 + 'px;';
                 }
             }
         }
@@ -176,7 +193,24 @@ export default GObject.registerClass({
             this._items[index].add_style_pseudo_class(justOutline ? 'highlighted' : 'selected');
         }
 
+        const changed = this._highlighted !== index;
         this._highlighted = index;
+        this._updateCells(changed);
+        if (changed)
+            this.emit('highlight-changed', index);
+    }
+
+    _updateCells(animate) {
+        this._items.forEach((item, i) => {
+            const opacity = i === this._highlighted ? 255 : DIM_OPACITY;
+            if (animate)
+                item.ease({opacity, duration: HIGHLIGHT_TIME, mode: Clutter.AnimationMode.EASE_OUT_QUAD});
+            else
+                item.opacity = opacity;
+
+            const ws = this._workspaces[i];
+            item._emptyDot.visible = !!ws && !ws.list_windows().some(w => !w.is_on_all_workspaces());
+        });
     }
 
     _itemActivated(n) {

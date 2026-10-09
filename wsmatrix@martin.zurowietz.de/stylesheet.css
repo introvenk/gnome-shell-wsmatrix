@@ -1,3 +1,33 @@
-.item-box:selected {
-    background-color: -st-accent-color;
+/* The sliding .ws-switcher-selection ring marks the selection, so cells stay flat. */
+.switcher-list .item-box,
+.switcher-list .item-box:selected,
+.switcher-list .item-box:highlighted {
+    background-color: transparent;
+    border-radius: 16px;
+    padding: 4px;
+}
+
+.switcher-list .item-box:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.ws-switcher-selection {
+    border-radius: 16px;
+    border: 3px solid -st-accent-color;
+    background-color: st-transparentize(-st-accent-color, 0.85);
+}
+
+.ws-switcher-label {
+    color: #ffffff;
+    background-color: rgba(0, 0, 0, 0.45);
+    border-radius: 999px;
+    padding: 2px 12px;
+}
+
+.ws-switcher-empty-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    background-color: rgba(255, 255, 255, 0.6);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
 }
