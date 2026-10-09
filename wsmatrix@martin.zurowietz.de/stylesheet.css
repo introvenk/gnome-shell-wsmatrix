@@ -52,13 +52,20 @@
     -wsmatrix-column-spacing: 4px;
 }
 
-#panel .panel-button#panelActivities .wsmatrix-panel-dot,
-#panel .panel-button#panelActivities .wsmatrix-panel-pill {
+#panel .panel-button#panelActivities .wsmatrix-panel-dot {
     border-radius: 999px;
     background-color: #ffffff;
 }
 
-#panel:overview .panel-button#panelActivities .wsmatrix-panel-dot,
-#panel:overview .panel-button#panelActivities .wsmatrix-panel-pill {
+#panel .panel-button#panelActivities .wsmatrix-panel-ring {
+    border-radius: 999px;
+    border: 1px solid #ffffff;
+}
+
+#panel:overview .panel-button#panelActivities .wsmatrix-panel-dot {
     background-color: #fafafb;
+}
+
+#panel:overview .panel-button#panelActivities .wsmatrix-panel-ring {
+    border-color: #fafafb;
 }

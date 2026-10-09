@@ -15,18 +15,21 @@ const SCALE_TIME = 500;
 const MAX_HEIGHT_SHARE = 0.7;
 const MIN_DOT_SIZE = 3;
 const MIN_SPACING = 1;
-// Inactive dots are drawn this many pixels smaller on each side than the pill, like the
+// Inactive dots are drawn this many pixels smaller on each side than their cell, like the
 // shell's smaller inactive dots, but without scaling, which would blur them. Only for
 // dots big enough to stay round.
 const INACTIVE_INSET = 1;
 const MIN_INSET_SIZE = 5;
+// The ring around the active dot reaches this far past its cell on every side, into the
+// gaps, so its 1px outline sits on whole pixels clear of the dot and its neighbours.
+const RING_SPREAD = 1;
 
 function reducedMotion() {
     return St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
 }
 
 // One workspace dot. The outer actor scales in and out when workspaces come and go,
-// the inner dot fades with its closeness to the pill.
+// the inner dot brightens with its closeness to the ring.
 const Dot = GObject.registerClass(
 class Dot extends Clutter.Actor {
     _init() {
@@ -80,10 +83,10 @@ class GridIndicator extends St.Widget {
         this._dots = [];
         this._pitch = [1, 1];
 
-        this._pill = new St.Widget({style_class: 'wsmatrix-panel-pill'});
-        this._pill.connect('notify::translation-x', () => this._updateDots());
-        this._pill.connect('notify::translation-y', () => this._updateDots());
-        this.add_child(this._pill);
+        this._ring = new St.Widget({style_class: 'wsmatrix-panel-ring'});
+        this._ring.connect('notify::translation-x', () => this._updateDots());
+        this._ring.connect('notify::translation-y', () => this._updateDots());
+        this.add_child(this._ring);
 
         const scroll = new Clutter.ScrollController({
             flags: Clutter.ScrollControllerFlags.DISCRETE |
@@ -121,7 +124,7 @@ class GridIndicator extends St.Widget {
 
         while (this._dots.length < n) {
             const dot = new Dot();
-            this.insert_child_below(dot, this._pill);
+            this.insert_child_below(dot, this._ring);
             this._dots.push(dot);
             dot.scaleIn();
         }
@@ -139,7 +142,7 @@ class GridIndicator extends St.Widget {
                 this);
             this._workspaces.push(workspace);
         }
-        this._snapPill = true;
+        this._snapRing = true;
         this.queue_relayout();
         this._updateDots();
         this._updateDescription();
@@ -165,7 +168,7 @@ class GridIndicator extends St.Widget {
             else
                 break;
         }
-        // Keep columns a little wider apart than rows, so the pill has room.
+        // Keep columns a little wider apart than rows.
         columnSpacing = Math.min(columnSpacing, rowSpacing + 2);
         return {
             columns, size, rowSpacing, columnSpacing,
@@ -194,8 +197,8 @@ class GridIndicator extends St.Widget {
 
         const cellBox = (column, row, spread = 0) => {
             const b = new Clutter.ActorBox();
-            b.set_origin(x0 + column * this._pitch[0] - spread, y0 + row * this._pitch[1]);
-            b.set_size(m.size + 2 * spread, m.size);
+            b.set_origin(x0 + column * this._pitch[0] - spread, y0 + row * this._pitch[1] - spread);
+            b.set_size(m.size + 2 * spread, m.size + 2 * spread);
             return b;
         };
 
@@ -212,12 +215,11 @@ class GridIndicator extends St.Widget {
                 child.allocate(child.allocation);
         }
 
-        // The pill covers a cell plus half the gap on each side, so it never touches the
-        // neighbouring dots. It sits on cell (0, 0) and glides by translation.
-        this._pill.allocate(cellBox(0, 0, Math.floor(m.columnSpacing / 2)));
-        if (this._snapPill || !this._pill.get_transition('translation-x')) {
-            this._snapPill = false;
-            this._pill.set(this._target());
+        // The ring sits on cell (0, 0) and glides by translation.
+        this._ring.allocate(cellBox(0, 0, RING_SPREAD));
+        if (this._snapRing || !this._ring.get_transition('translation-x')) {
+            this._snapRing = false;
+            this._ring.set(this._target());
         }
     }
 
@@ -231,8 +233,8 @@ class GridIndicator extends St.Widget {
     }
 
     _glideToActive() {
-        this._pill.remove_all_transitions();
-        this._pill.ease({
+        this._ring.remove_all_transitions();
+        this._ring.ease({
             ...this._target(),
             duration: reducedMotion() ? 0 : GLIDE_TIME,
             mode: Clutter.AnimationMode.EASE_OUT_CUBIC,
@@ -240,18 +242,18 @@ class GridIndicator extends St.Widget {
         this._updateDescription();
     }
 
-    // Dots fade as the pill comes close and hide under it. Opacity only: scaling dots
-    // this small lands them on fractional pixels and blurs them.
+    // Dots brighten as the ring comes close; the active one is at full brightness inside
+    // it. Opacity only: scaling dots this small lands them on fractional pixels and blurs them.
     _updateDots() {
         const columns = global.workspace_manager.layout_columns;
-        const x = this._pill.translation_x / this._pitch[0];
-        const y = this._pill.translation_y / this._pitch[1];
+        const x = this._ring.translation_x / this._pitch[0];
+        const y = this._ring.translation_y / this._pitch[1];
         this._dots.forEach((dot, i) => {
             const distance = Math.hypot(i % columns - x, Math.floor(i / columns) - y);
             const expansion = Math.clamp(1 - distance, 0, 1);
             const occupied = this._workspaces[i]?.list_windows().some(w => !w.skip_taskbar);
             const rest = occupied ? OCCUPIED_OPACITY : EMPTY_OPACITY;
-            dot.dot.opacity = Math.round(rest * (1 - expansion) * 255);
+            dot.dot.opacity = Math.round((rest + (1 - rest) * expansion) * 255);
         });
     }
 
