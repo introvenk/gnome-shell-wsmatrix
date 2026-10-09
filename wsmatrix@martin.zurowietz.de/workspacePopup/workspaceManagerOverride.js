@@ -5,6 +5,7 @@ import GLib from 'gi://GLib';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import WorkspaceSwitcherPopup from "./workspaceSwitcherPopup.js";
+import GridIndicator from '../panel/gridIndicator.js';
 import {SCROLL_TIMEOUT_TIME} from 'resource:///org/gnome/shell/ui/windowManager.js';
 import {WorkspaceAnimationController} from "./workspaceAnimation.js";
 
@@ -53,6 +54,7 @@ export default class WorkspaceManagerOverride {
         this._addKeybindings();
         this._connectLayoutManager();
         this._trackPreviousWorkspace();
+        this._handleShowPanelIndicatorChanged();
     }
 
     disable() {
@@ -67,6 +69,8 @@ export default class WorkspaceManagerOverride {
         this._removeKeybindings();
         this._disconnectLayoutManager();
         this.wsManager.disconnectObject(this);
+        this._gridIndicator?.destroy();
+        this._gridIndicator = null;
     }
 
     _trackPreviousWorkspace() {
@@ -89,6 +93,15 @@ export default class WorkspaceManagerOverride {
     _switchToIndex(index, window = null) {
         const action = window ? 'move' : 'switch';
         this._showWorkspaceSwitcher(global.display, window, null, `${action}-to-workspace-${index + 1}`);
+    }
+
+    _handleShowPanelIndicatorChanged() {
+        this._gridIndicator?.destroy();
+        this._gridIndicator = null;
+        if (!this.settings.get_boolean('show-panel-indicator'))
+            return;
+        this._gridIndicator = new GridIndicator(this);
+        Main.panel.addToStatusArea('wsmatrix-grid', this._gridIndicator, 1, 'left');
     }
 
     _overrideOriginalProperties() {
@@ -168,6 +181,7 @@ export default class WorkspaceManagerOverride {
             'changed::multi-monitor', this._handleMultiMonitorChanged.bind(this),
             'changed::wraparound-mode', this._handleWraparoundModeChanged.bind(this),
             'changed::vertical-swipe', this._handleVerticalSwipeChanged.bind(this),
+            'changed::show-panel-indicator', this._handleShowPanelIndicatorChanged.bind(this),
             'changed::popup-timeout', destroyPopup,
             'changed::scale', destroyPopup,
             'changed::show-thumbnails', destroyPopup,
@@ -279,6 +293,7 @@ export default class WorkspaceManagerOverride {
         this._overrideNumberOfWorkspaces();
         this._overrideLayout();
         this._destroyWorkspaceSwitcherPopup();
+        this._gridIndicator?.rebuild();
     }
 
     _handleMultiMonitorChanged() {

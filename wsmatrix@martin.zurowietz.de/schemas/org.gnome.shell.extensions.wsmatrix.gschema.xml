@@ -46,6 +46,10 @@
             <default>'none'</default>
             <summary>Wraparound workspaces while navigating</summary>
         </key>
+        <key type="b" name="show-panel-indicator">
+            <default>true</default>
+            <summary>Show a map of the workspace grid in the top bar</summary>
+        </key>
         <key type="b" name="vertical-swipe">
             <default>false</default>
             <summary>Switch rows with vertical touchpad swipes</summary>

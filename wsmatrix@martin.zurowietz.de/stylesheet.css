@@ -43,3 +43,20 @@
     color: -st-accent-fg-color;
     background-color: -st-accent-color;
 }
+
+/* Top-bar map of the workspace grid. */
+.wsmatrix-panel-cell {
+    width: 6px;
+    height: 6px;
+    border-radius: 2px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+}
+
+.wsmatrix-panel-cell.occupied {
+    background-color: rgba(255, 255, 255, 0.45);
+}
+
+.wsmatrix-panel-cell.active {
+    background-color: -st-accent-color;
+    border-color: -st-accent-color;
+}

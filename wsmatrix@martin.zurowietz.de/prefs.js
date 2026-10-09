@@ -66,6 +66,7 @@ export default class Prefs extends ExtensionPreferences {
         }, settings));
 
         group.add(this._createSwitcherRow('Show popup for all monitors', 'multi-monitor', settings));
+        group.add(this._createSwitcherRow('Show workspace grid in the top bar', 'show-panel-indicator', settings));
 
         group = new Adw.PreferencesGroup({
             title: _('Gesture Settings'),
