@@ -16,8 +16,8 @@ const ENTRANCE_SCALE = 0.96;
 const INDICATOR_TIME = 150;
 // Accumulated scroll distance that moves the selection by one cell.
 const SCROLL_STEP = 1;
-// How long a popup shown after a swipe stays up when the timeout is 0 (no keys to release).
-const PASSIVE_TIMEOUT = 500;
+// How long a popup stays up when the timeout is 0 but there are no keys to release.
+const FALLBACK_TIMEOUT = 500;
 const BLUR_RADIUS = 40;
 // Background blur is rectangular; insetting it by this fraction of the corner radius keeps
 // its corners inside the rounded popup outline (1 - 1/sqrt(2) ~= 0.29).
@@ -139,23 +139,32 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
     }
 
     showToggle(backward, binding, mask, toggle) {
-        this.resetTimeout();
-
         this._toggle = toggle;
         if (this._popupTimeout > 0 || this._toggle) {
             mask = 0
         }
+        // With no modifiers to release (e.g. a switch during a drag) only a timeout can
+        // close the popup; without one it kept the keyboard grab forever (#200, #250).
+        if (!this._toggle && mask === 0)
+            this._popupTimeout ||= FALLBACK_TIMEOUT;
+        this.resetTimeout();
 
-        if (this.show(backward, binding, mask)) {
-            this.insert_child_below(this._backdrop, this._switcherList);
-            this.add_child(this._indicator);
-            // Force a layout pass like SwitcherPopup.show() does, so the new children are
-            // allocated before the entrance transitions start.
-            this.get_allocation_box();
-            this._showImmediately();
-            this._animateEntrance();
-            modals.push(this);
+        // Before show(): it finishes right away when the modifiers are already released.
+        modals.push(this);
+        if (!this.show(backward, binding, mask)) {
+            modals = modals.filter(m => m !== this);
+            return;
         }
+        if (this._fading)
+            return;
+
+        this.insert_child_below(this._backdrop, this._switcherList);
+        this.add_child(this._indicator);
+        // Force a layout pass like SwitcherPopup.show() does, so the new children are
+        // allocated before the entrance transitions start.
+        this.get_allocation_box();
+        this._showImmediately();
+        this._animateEntrance();
     }
 
     // Shown after a touchpad swipe: without a modal grab, which would swallow the next
@@ -165,7 +174,7 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
             return;
 
         this.reactive = false;
-        this._popupTimeout ||= PASSIVE_TIMEOUT;
+        this._popupTimeout ||= FALLBACK_TIMEOUT;
         this.add_child(this._switcherList);
         this.insert_child_below(this._backdrop, this._switcherList);
         this.add_child(this._indicator);
