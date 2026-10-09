@@ -101,7 +101,6 @@ export default class WorkspaceManagerOverride {
         if (!this.settings.get_boolean('show-panel-indicator'))
             return;
         this._gridIndicator = new GridIndicator(this);
-        Main.panel.addToStatusArea('wsmatrix-grid', this._gridIndicator, 1, 'left');
     }
 
     _overrideOriginalProperties() {

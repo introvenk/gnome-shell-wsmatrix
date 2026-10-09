@@ -44,19 +44,16 @@
     background-color: -st-accent-color;
 }
 
-/* Top-bar map of the workspace grid. */
-.wsmatrix-panel-cell {
-    width: 6px;
-    height: 6px;
-    border-radius: 2px;
-    border: 1px solid rgba(255, 255, 255, 0.45);
+/* Workspace grid inside the Activities button, styled like the shell's workspace dots. */
+#panel .panel-button#panelActivities .wsmatrix-panel-grid {
+    padding: 0 0.2045em;
+    -wsmatrix-row-spacing: 3px;
+    -wsmatrix-column-spacing: 4px;
 }
 
-.wsmatrix-panel-cell.occupied {
-    background-color: rgba(255, 255, 255, 0.45);
-}
-
-.wsmatrix-panel-cell.active {
-    background-color: -st-accent-color;
-    border-color: -st-accent-color;
+#panel .panel-button#panelActivities .wsmatrix-panel-dot {
+    border-radius: 999px;
+    min-width: 0.4545em;
+    min-height: 0.4545em;
+    background-color: #ffffff;
 }
