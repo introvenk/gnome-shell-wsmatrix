@@ -15,3 +15,7 @@ schemas:
 test: default
 	gnome-extensions install --force $(UUID).zip
 	MUTTER_DEBUG_DUMMY_MODE_SPECS=1600x900 dbus-run-session gnome-shell --devkit --wayland
+
+# Run every automated scenario in tests/nested.
+check:
+	@set -e; for s in popup scroll cycle overview swipe; do echo "== $$s"; tests/nested/run.sh $$s; done
