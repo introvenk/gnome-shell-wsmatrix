@@ -35,7 +35,7 @@ class MonitorGroup extends GMonitorGroup {
             const ws = group.workspace;
             const fullscreen = ws.list_windows().some(w => w.get_monitor() === this._monitor.index && w.is_fullscreen());
 
-            if (ws.index() > 0 && vertical && !fullscreen && this._monitor.index === Main.layoutManager.primaryIndex) {
+            if (group !== this._workspaceGroups[0] && vertical && !fullscreen && this._monitor.index === Main.layoutManager.primaryIndex) {
                 // We have to shift windows up or down by the height of the panel to prevent having a
                 // visible gap between the windows while switching workspaces. Since fullscreen windows
                 // hide the panel, they don't need to be shifted up or down.
