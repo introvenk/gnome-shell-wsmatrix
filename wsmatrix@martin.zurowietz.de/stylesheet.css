@@ -37,3 +37,9 @@
     background-color: rgba(255, 255, 255, 0.6);
     box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.35);
 }
+
+/* GNOME 47+ accent pair: readable text on the accent colour. */
+.wsmatrix-switcher-list .item-box:selected .ws-switcher-label {
+    color: -st-accent-fg-color;
+    background-color: -st-accent-color;
+}
