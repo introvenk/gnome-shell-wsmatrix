@@ -168,14 +168,18 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         this._animateEntrance();
     }
 
-    // Shown after a touchpad swipe: without a modal grab, which would swallow the next
-    // swipe, and closed by the timeout since there are no keys to release.
-    showPassive() {
+    // Without a modal grab: after a touchpad swipe, where a grab would swallow the next
+    // swipe, and on secondary monitors, where a second grab would take the mouse from
+    // the primary popup (#224). Swipe popups close by timeout, there are no keys to release.
+    showPassive(timeout = true) {
         if (this._items.length === 0)
             return;
 
         this.reactive = false;
-        this._popupTimeout ||= FALLBACK_TIMEOUT;
+        if (timeout)
+            this._popupTimeout ||= FALLBACK_TIMEOUT;
+        else
+            this._popupTimeout = 0;
         this.add_child(this._switcherList);
         this.insert_child_below(this._backdrop, this._switcherList);
         this.add_child(this._indicator);
@@ -188,8 +192,12 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
     }
 
     fadeAndDestroy() {
+        if (this._fading)
+            return;
         this._fading = true;
         super.fadeAndDestroy();
+        // An outside click fades only the popup holding the grab; close the others too (#253).
+        modals.filter(m => !m._fading).forEach(m => m.fadeAndDestroy());
     }
 
     _animateEntrance() {

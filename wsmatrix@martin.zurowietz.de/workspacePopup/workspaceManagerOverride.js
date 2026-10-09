@@ -485,6 +485,9 @@ export default class WorkspaceManagerOverride {
                 if (passive) {
                     // After a swipe: no modal grab, or it would swallow the next swipe.
                     popup.showPassive();
+                } else if (monitorIndex !== Main.layoutManager.primaryIndex) {
+                    // One grab for all monitors: a second one would take the mouse (#224).
+                    popup.showPassive(false);
                 } else {
                     let event = Clutter.get_current_event();
                     // gnome-shell's SwitcherPopup.show() seems to expect a modifier
