@@ -66,11 +66,12 @@ export default GObject.registerClass({
         }
 
         this._items = [];
+        this._workspaces = thumbnails.map(t => t.metaWorkspace);
 
+        // connectObject disconnects on destroy, also when the popup is destroyed from C.
         let workspaceManager = global.workspace_manager;
-        this._activeWorkspaceChangedId =
-            workspaceManager.connect('active-workspace-changed',
-                () => this.highlight(workspaceManager.get_active_workspace_index()));
+        workspaceManager.connectObject('active-workspace-changed',
+            () => this.highlight(workspaceManager.get_active_workspace_index()), this);
 
         for (let i = 0; i < thumbnails.length; i++) {
             this.addItem(thumbnails[i], workspaceName[i]);
@@ -215,13 +216,4 @@ export default GObject.registerClass({
         return [this._width + padding, this._width + padding];
     }
 
-    destroy() {
-        super.destroy();
-        if (this._activeWorkspaceChangedId > 0) {
-            let workspaceManager = global.workspace_manager;
-
-            workspaceManager.disconnect(this._activeWorkspaceChangedId);
-            this._activeWorkspaceChangedId = 0;
-        }
-    }
 });
