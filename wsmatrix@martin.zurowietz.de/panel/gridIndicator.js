@@ -21,8 +21,11 @@ const MIN_SPACING = 1;
 const INACTIVE_INSET = 1;
 const MIN_INSET_SIZE = 5;
 // The ring around the active dot reaches this far past its cell on every side, into the
-// gaps, so its 1px outline sits on whole pixels clear of the dot and its neighbours.
-const RING_SPREAD = 1;
+// gaps, so its outline sits on whole pixels clear of the dot and its neighbours.
+// Shrunken dots on large grids leave no room for that, so the ring thins to one pixel,
+// and on the tiniest dots it is left out: the active dot's full brightness marks it.
+const RING_SPREAD = 2;
+const THIN_RING_BELOW = 6;
 
 function reducedMotion() {
     return St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
@@ -216,7 +219,10 @@ class GridIndicator extends St.Widget {
         }
 
         // The ring sits on cell (0, 0) and glides by translation.
-        this._ring.allocate(cellBox(0, 0, RING_SPREAD));
+        const thin = m.size < THIN_RING_BELOW;
+        this._ring.set_style(thin ? 'border-width: 1px;' : null);
+        this._ring.visible = m.size >= MIN_INSET_SIZE;
+        this._ring.allocate(cellBox(0, 0, thin ? 1 : RING_SPREAD));
         if (this._snapRing || !this._ring.get_transition('translation-x')) {
             this._snapRing = false;
             this._ring.set(this._target());

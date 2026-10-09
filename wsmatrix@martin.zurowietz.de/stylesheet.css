@@ -48,7 +48,7 @@
 #panel .panel-button#panelActivities .wsmatrix-panel-grid {
     padding: 0 0.2045em;
     -wsmatrix-dot-size: 6px;
-    -wsmatrix-row-spacing: 2px;
+    -wsmatrix-row-spacing: 3px;
     -wsmatrix-column-spacing: 4px;
 }
 
@@ -59,7 +59,7 @@
 
 #panel .panel-button#panelActivities .wsmatrix-panel-ring {
     border-radius: 999px;
-    border: 1px solid #ffffff;
+    border: 2px solid #ffffff;
 }
 
 #panel:overview .panel-button#panelActivities .wsmatrix-panel-dot {
