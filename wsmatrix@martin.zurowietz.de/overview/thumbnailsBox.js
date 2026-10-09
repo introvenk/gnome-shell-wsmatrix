@@ -1,47 +1,12 @@
 import Clutter from 'gi://Clutter';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
-import WorkspaceThumbnail from '../workspacePopup/workspaceThumbnail.js';
+import {addBackground} from '../workspacePopup/workspaceThumbnail.js';
 import Override from '../Override.js';
 import {
-    ThumbnailState,
     ThumbnailsBox as GThumbnailsBox
 } from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 
-
-const addThumbnails = function (start, count) {
-    let workspaceManager = global.workspace_manager;
-
-    for (let k = start; k < start + count; k++) {
-        let metaWorkspace = workspaceManager.get_workspace_by_index(k);
-        let thumbnail = new WorkspaceThumbnail(metaWorkspace, this._monitorIndex);
-        thumbnail.setPorthole(
-            this._porthole.x, this._porthole.y,
-            this._porthole.width, this._porthole.height);
-        this._thumbnails.push(thumbnail);
-        this.add_child(thumbnail);
-
-        if (this._shouldShow && start > 0 && this._spliceIndex === -1) {
-            // not the initial fill, and not splicing via DND
-            thumbnail.state = ThumbnailState.NEW;
-            thumbnail.slide_position = 1; // start slid out
-            thumbnail.collapse_fraction = 1; // start fully collapsed
-            this._haveNewThumbnails = true;
-        } else {
-            thumbnail.state = ThumbnailState.NORMAL;
-        }
-
-        this._stateCounts[thumbnail.state]++;
-    }
-
-    this._queueUpdateStates();
-
-    // The thumbnails indicator actually needs to be on top of the thumbnails
-    this.set_child_above_sibling(this._indicator, null);
-
-    // Clear the splice index, we got the message
-    this._spliceIndex = -1;
-}
 
 const vfunc_get_preferred_height = function (forWidth) {
     const workspaceManager = global.workspace_manager;
@@ -53,7 +18,7 @@ const vfunc_get_preferred_height = function (forWidth) {
     forWidth = themeNode.adjust_for_width(forWidth);
 
     let spacing = themeNode.get_length('spacing');
-    let totalSpacing = (rows - 1) * spacing;
+    let totalSpacing = (columns - 1) * spacing;
 
     const avail = forWidth - totalSpacing;
 
@@ -291,11 +256,28 @@ const vfunc_allocate = function(box) {
 export default class ThumbnailsBox extends Override {
     enable() {
         const subject = GThumbnailsBox.prototype;
-        this._im.overrideMethod(subject, 'addThumbnails', (original) => {
-            return function () {
-                return addThumbnails.call(this, ...arguments);
-            };
-        });
+        // Same as the shell's, plus the wallpaper on each new thumbnail.
+        this._im.overrideMethod(subject, 'addThumbnails', original =>
+            function (start, count) {
+                original.call(this, start, count);
+                this._thumbnails.slice(start, start + count).forEach(addBackground);
+            });
+
+        // The shell picks the drop target by x only, so in a grid every row matched the
+        // first row's thumbnail and windows could not be dropped below it (#274).
+        this._im.overrideMethod(subject, 'handleDragOver', original =>
+            function (source, actor, x, y, time) {
+                this._wsmatrixDragY = y;
+                return original.call(this, source, actor, x, y, time);
+            });
+
+        this._im.overrideMethod(subject, '_withinWorkspace', original =>
+            function (x, index, rtl) {
+                const thumbnail = this._thumbnails[index];
+                const y = this._wsmatrixDragY;
+                return original.call(this, x, index, rtl) &&
+                    (y === undefined || (y > thumbnail.y && y <= thumbnail.y + thumbnail.height));
+            });
 
         this._im.overrideMethod(subject, 'vfunc_get_preferred_height', (original) => {
             return function () {
