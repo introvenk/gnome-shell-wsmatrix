@@ -40,7 +40,7 @@ export default GObject.registerClass({
 }, class WorkspaceSwitcherPopupList extends St.BoxLayout {
     _init(thumbnails, workspaceName, options) {
         super._init({
-            style_class: 'switcher-list',
+            style_class: 'switcher-list wsmatrix-switcher-list',
             orientation: Clutter.Orientation.VERTICAL,
             style: `spacing: ${ITEM_SPACING}`,
         });
@@ -131,7 +131,9 @@ export default GObject.registerClass({
         list.add_child(bbox);
 
         bbox.connect('clicked', () => this._onItemClicked(bbox));
-        bbox.connect('motion-event', () => this._onItemEnter(bbox));
+        const motionController = new Clutter.MotionController();
+        motionController.connect('motion', () => this._onItemEnter(bbox));
+        bbox.add_action(motionController);
 
         this._items.push(bbox);
         return bbox;
