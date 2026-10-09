@@ -15,6 +15,11 @@ const SCALE_TIME = 500;
 const MAX_HEIGHT_SHARE = 0.7;
 const MIN_DOT_SIZE = 3;
 const MIN_SPACING = 1;
+// Inactive dots are drawn this many pixels smaller on each side than the pill, like the
+// shell's smaller inactive dots, but without scaling, which would blur them. Only for
+// dots big enough to stay round.
+const INACTIVE_INSET = 1;
+const MIN_INSET_SIZE = 5;
 
 function reducedMotion() {
     return St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
@@ -194,7 +199,13 @@ class GridIndicator extends St.Widget {
             return b;
         };
 
-        this._dots.forEach((dot, i) => dot.allocate(cellBox(i % m.columns, Math.floor(i / m.columns))));
+        const inset = m.size >= MIN_INSET_SIZE ? INACTIVE_INSET : 0;
+        this._dots.forEach((dot, i) => {
+            const b = cellBox(i % m.columns, Math.floor(i / m.columns));
+            b.set_origin(b.x1 + inset, b.y1 + inset);
+            b.set_size(m.size - 2 * inset, m.size - 2 * inset);
+            dot.allocate(b);
+        });
         // Dots on their way out keep their last place.
         for (const child of this) {
             if (child._leaving)
