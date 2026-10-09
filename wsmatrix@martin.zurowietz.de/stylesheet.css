@@ -1,13 +1,19 @@
+/* Scoped to our popup so GNOME's own Alt+Tab switcher keeps its stock look. */
+.wsmatrix-switcher-list {
+    /* Translucent so the blurred backdrop shows through. */
+    background-color: rgba(34, 34, 38, 0.72);
+}
+
 /* The sliding .ws-switcher-selection ring marks the selection, so cells stay flat. */
-.switcher-list .item-box,
-.switcher-list .item-box:selected,
-.switcher-list .item-box:highlighted {
+.wsmatrix-switcher-list .item-box,
+.wsmatrix-switcher-list .item-box:selected,
+.wsmatrix-switcher-list .item-box:highlighted {
     background-color: transparent;
     border-radius: 16px;
     padding: 4px;
 }
 
-.switcher-list .item-box:hover {
+.wsmatrix-switcher-list .item-box:hover {
     background-color: rgba(255, 255, 255, 0.06);
 }
 
