@@ -17,5 +17,10 @@ class WorkspaceThumbnail extends GWorkspaceThumbnail {
             container: this._contents,
             vignette: false
         });
+        // The shared Background outlives the popup and would keep the thumbnail alive.
+        this.connect('destroy', () => {
+            this._bgManager?.destroy();
+            this._bgManager = null;
+        });
     }
 });
