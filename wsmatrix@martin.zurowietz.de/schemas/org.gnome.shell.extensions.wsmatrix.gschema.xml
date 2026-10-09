@@ -103,5 +103,81 @@
                 Keybinding to confirm and close the workspace overview
             </description>
         </key>
+        <key name="switch-to-previous-workspace" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;BackSpace"]</default>
+            <summary>Switch back to the previously used workspace</summary>
+        </key>
+        <key name="switch-to-cell-1" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;1"]</default>
+            <summary>Switch to workspace 1 of the grid</summary>
+        </key>
+        <key name="move-to-cell-1" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;1"]</default>
+            <summary>Move the focused window to workspace 1 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-2" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;2"]</default>
+            <summary>Switch to workspace 2 of the grid</summary>
+        </key>
+        <key name="move-to-cell-2" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;2"]</default>
+            <summary>Move the focused window to workspace 2 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-3" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;3"]</default>
+            <summary>Switch to workspace 3 of the grid</summary>
+        </key>
+        <key name="move-to-cell-3" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;3"]</default>
+            <summary>Move the focused window to workspace 3 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-4" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;4"]</default>
+            <summary>Switch to workspace 4 of the grid</summary>
+        </key>
+        <key name="move-to-cell-4" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;4"]</default>
+            <summary>Move the focused window to workspace 4 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-5" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;5"]</default>
+            <summary>Switch to workspace 5 of the grid</summary>
+        </key>
+        <key name="move-to-cell-5" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;5"]</default>
+            <summary>Move the focused window to workspace 5 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-6" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;6"]</default>
+            <summary>Switch to workspace 6 of the grid</summary>
+        </key>
+        <key name="move-to-cell-6" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;6"]</default>
+            <summary>Move the focused window to workspace 6 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-7" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;7"]</default>
+            <summary>Switch to workspace 7 of the grid</summary>
+        </key>
+        <key name="move-to-cell-7" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;7"]</default>
+            <summary>Move the focused window to workspace 7 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-8" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;8"]</default>
+            <summary>Switch to workspace 8 of the grid</summary>
+        </key>
+        <key name="move-to-cell-8" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;8"]</default>
+            <summary>Move the focused window to workspace 8 of the grid</summary>
+        </key>
+        <key name="switch-to-cell-9" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;9"]</default>
+            <summary>Switch to workspace 9 of the grid</summary>
+        </key>
+        <key name="move-to-cell-9" type="as">
+            <default>["&lt;Control&gt;&lt;Alt&gt;&lt;Shift&gt;9"]</default>
+            <summary>Move the focused window to workspace 9 of the grid</summary>
+        </key>
     </schema>
 </schemalist>

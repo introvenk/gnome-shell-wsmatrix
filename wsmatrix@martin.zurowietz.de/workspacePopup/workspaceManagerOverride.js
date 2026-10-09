@@ -8,6 +8,9 @@ import WorkspaceSwitcherPopup from "./workspaceSwitcherPopup.js";
 import {SCROLL_TIMEOUT_TIME} from 'resource:///org/gnome/shell/ui/windowManager.js';
 import {WorkspaceAnimationController} from "./workspaceAnimation.js";
 
+// Cells reachable with a number shortcut (Ctrl+Alt+1 ... Ctrl+Alt+9).
+const CELL_SHORTCUTS = 9;
+
 const WraparoundMode = {
     NONE: 0,
     NEXT_PREV: 1,
@@ -49,6 +52,7 @@ export default class WorkspaceManagerOverride {
         this._notify();
         this._addKeybindings();
         this._connectLayoutManager();
+        this._trackPreviousWorkspace();
     }
 
     disable() {
@@ -62,6 +66,29 @@ export default class WorkspaceManagerOverride {
         this._notify();
         this._removeKeybindings();
         this._disconnectLayoutManager();
+        this.wsManager.disconnectObject(this);
+    }
+
+    _trackPreviousWorkspace() {
+        this._currentIndex = this.wsManager.get_active_workspace_index();
+        this.wsManager.connectObject('active-workspace-changed', () => {
+            const index = this.wsManager.get_active_workspace_index();
+            if (index !== this._currentIndex) {
+                this._previousIndex = this._currentIndex;
+                this._currentIndex = index;
+            }
+        }, this);
+    }
+
+    _switchToPrevious() {
+        if (this._previousIndex !== undefined)
+            this._switchToIndex(this._previousIndex);
+    }
+
+    // Reuses the shell's numbered switch/move path, so the popup and animation match.
+    _switchToIndex(index, window = null) {
+        const action = window ? 'move' : 'switch';
+        this._showWorkspaceSwitcher(global.display, window, null, `${action}-to-workspace-${index + 1}`);
     }
 
     _overrideOriginalProperties() {
@@ -173,6 +200,18 @@ export default class WorkspaceManagerOverride {
             Shell.ActionMode.NORMAL,
             this._showWorkspaceSwitcherPopup.bind(this, true)
         );
+
+        const modes = Shell.ActionMode.NORMAL | Shell.ActionMode.OVERVIEW;
+        const add = (name, handler) => this.wm.addKeybinding(
+            name, this._keybindings, Meta.KeyBindingFlags.NONE, modes, handler);
+        add('switch-to-previous-workspace', () => this._switchToPrevious());
+        for (let i = 1; i <= CELL_SHORTCUTS; i++) {
+            add(`switch-to-cell-${i}`, () => this._switchToIndex(i - 1));
+            add(`move-to-cell-${i}`, (_display, window) => {
+                if (window)
+                    this._switchToIndex(i - 1, window);
+            });
+        }
     }
 
     _addWorkspaceOverviewKeybindings() {
@@ -219,6 +258,11 @@ export default class WorkspaceManagerOverride {
 
     _removeKeybindings() {
         this.wm.removeKeybinding('workspace-overview-toggle');
+        this.wm.removeKeybinding('switch-to-previous-workspace');
+        for (let i = 1; i <= CELL_SHORTCUTS; i++) {
+            this.wm.removeKeybinding(`switch-to-cell-${i}`);
+            this.wm.removeKeybinding(`move-to-cell-${i}`);
+        }
     }
 
     _removeWorkspaceOverviewKeybindings() {
