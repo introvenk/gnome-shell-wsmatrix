@@ -6,23 +6,22 @@ import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 
 // Same look and motion as the shell's own workspace dots (panel.js).
-const INACTIVE_SCALE = 0.75;
 const EMPTY_OPACITY = 0.35;
 const OCCUPIED_OPACITY = 0.6;
 const GLIDE_TIME = 250;
 const SCALE_TIME = 500;
-// The active-workspace pill is this many dots wide; it floats over the grid, so the
-// columns stay aligned.
-const PILL_WIDTH = 1.8;
-// Share of the top bar's height the grid may use; larger grids shrink to fit.
+// Share of the top bar's height the grid may use; larger grids shrink to fit, down to
+// these sizes. Everything stays on whole pixels so tiny dots render round and even.
 const MAX_HEIGHT_SHARE = 0.7;
+const MIN_DOT_SIZE = 3;
+const MIN_SPACING = 1;
 
 function reducedMotion() {
     return St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
 }
 
 // One workspace dot. The outer actor scales in and out when workspaces come and go,
-// the inner dot grows and brightens with its closeness to the pill.
+// the inner dot fades with its closeness to the pill.
 const Dot = GObject.registerClass(
 class Dot extends Clutter.Actor {
     _init() {
@@ -146,19 +145,23 @@ class GridIndicator extends St.Widget {
         const columns = Math.max(1, workspaceManager.layout_columns);
         const rows = Math.max(1, Math.ceil(workspaceManager.n_workspaces / columns));
         const node = this.get_theme_node();
-        let size = node.get_length('-wsmatrix-dot-size');
-        let rowSpacing = node.get_length('-wsmatrix-row-spacing');
-        let columnSpacing = node.get_length('-wsmatrix-column-spacing');
+        let size = Math.round(node.get_length('-wsmatrix-dot-size'));
+        let rowSpacing = Math.round(node.get_length('-wsmatrix-row-spacing'));
+        let columnSpacing = Math.round(node.get_length('-wsmatrix-column-spacing'));
 
-        const height = rows * size + (rows - 1) * rowSpacing;
         // The bar's CSS height: asking the panel for its size would ask us again.
-        const maxHeight = Main.panel.get_theme_node().get_height() * MAX_HEIGHT_SHARE;
-        if (height > maxHeight) {
-            const shrink = maxHeight / height;
-            size *= shrink;
-            rowSpacing *= shrink;
-            columnSpacing *= shrink;
+        const maxHeight = Math.floor(Main.panel.get_theme_node().get_height() * MAX_HEIGHT_SHARE);
+        // Tighten the rows first, then shrink the dots.
+        while (rows * size + (rows - 1) * rowSpacing > maxHeight) {
+            if (rowSpacing > MIN_SPACING && rowSpacing * 2 >= size)
+                rowSpacing--;
+            else if (size > MIN_DOT_SIZE)
+                size--;
+            else
+                break;
         }
+        // Keep columns a little wider apart than rows, so the pill has room.
+        columnSpacing = Math.min(columnSpacing, rowSpacing + 2);
         return {
             columns, size, rowSpacing, columnSpacing,
             width: columns * size + (columns - 1) * columnSpacing,
@@ -180,16 +183,14 @@ class GridIndicator extends St.Widget {
         this.set_allocation(box);
         const content = this.get_theme_node().get_content_box(box);
         const m = this._metrics();
-        const x0 = content.x1 + (content.get_width() - m.width) / 2;
-        const y0 = content.y1 + (content.get_height() - m.height) / 2;
+        const x0 = Math.round(content.x1 + (content.get_width() - m.width) / 2);
+        const y0 = Math.round(content.y1 + (content.get_height() - m.height) / 2);
         this._pitch = [m.size + m.columnSpacing, m.size + m.rowSpacing];
 
-        const cellBox = (column, row, width = m.size) => {
+        const cellBox = (column, row, spread = 0) => {
             const b = new Clutter.ActorBox();
-            b.set_origin(
-                Math.round(x0 + column * this._pitch[0] - (width - m.size) / 2),
-                Math.round(y0 + row * this._pitch[1]));
-            b.set_size(Math.round(width), Math.round(m.size));
+            b.set_origin(x0 + column * this._pitch[0] - spread, y0 + row * this._pitch[1]);
+            b.set_size(m.size + 2 * spread, m.size);
             return b;
         };
 
@@ -200,8 +201,9 @@ class GridIndicator extends St.Widget {
                 child.allocate(child.allocation);
         }
 
-        // The pill sits on cell (0, 0) and is moved by translation, so it can glide.
-        this._pill.allocate(cellBox(0, 0, m.size * PILL_WIDTH));
+        // The pill covers a cell plus half the gap on each side, so it never touches the
+        // neighbouring dots. It sits on cell (0, 0) and glides by translation.
+        this._pill.allocate(cellBox(0, 0, Math.floor(m.columnSpacing / 2)));
         if (this._snapPill || !this._pill.get_transition('translation-x')) {
             this._snapPill = false;
             this._pill.set(this._target());
@@ -227,7 +229,8 @@ class GridIndicator extends St.Widget {
         this._updateDescription();
     }
 
-    // Dots grow and brighten as the pill comes close, then hide under it.
+    // Dots fade as the pill comes close and hide under it. Opacity only: scaling dots
+    // this small lands them on fractional pixels and blurs them.
     _updateDots() {
         const columns = global.workspace_manager.layout_columns;
         const x = this._pill.translation_x / this._pitch[0];
@@ -237,12 +240,7 @@ class GridIndicator extends St.Widget {
             const expansion = Math.clamp(1 - distance, 0, 1);
             const occupied = this._workspaces[i]?.list_windows().some(w => !w.skip_taskbar);
             const rest = occupied ? OCCUPIED_OPACITY : EMPTY_OPACITY;
-            const scale = INACTIVE_SCALE + (1 - INACTIVE_SCALE) * expansion;
-            dot.dot.set({
-                opacity: Math.round(rest * (1 - expansion) * 255),
-                scale_x: scale,
-                scale_y: scale,
-            });
+            dot.dot.opacity = Math.round(rest * (1 - expansion) * 255);
         });
     }
 

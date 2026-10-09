@@ -47,8 +47,8 @@
 /* Workspace grid inside the Activities button, styled like the shell's workspace dots. */
 #panel .panel-button#panelActivities .wsmatrix-panel-grid {
     padding: 0 0.2045em;
-    -wsmatrix-dot-size: 0.4545em;
-    -wsmatrix-row-spacing: 3px;
+    -wsmatrix-dot-size: 6px;
+    -wsmatrix-row-spacing: 2px;
     -wsmatrix-column-spacing: 4px;
 }
 
