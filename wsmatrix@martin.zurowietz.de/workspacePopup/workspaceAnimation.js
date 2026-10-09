@@ -126,6 +126,24 @@ class MonitorGroup extends GMonitorGroup {
 });
 
 export class WorkspaceAnimationController extends GWorkspaceAnimationController {
+    animateSwitch(from, to, direction, onComplete) {
+        // The grid MonitorGroups only know the workspaces of their own switch, so a running
+        // switch can't be reused like upstream does. Finish it before starting the new one.
+        if (this._switchData && !this._switchData.gestureActivated) {
+            const pending = this._pendingOnComplete;
+            this._switchData.monitors.forEach(m => m.remove_all_transitions());
+            this._finishWorkspaceSwitch(this._switchData);
+            this._pendingOnComplete = null;
+            pending?.();
+        }
+
+        this._pendingOnComplete = onComplete;
+        super.animateSwitch(from, to, direction, () => {
+            this._pendingOnComplete = null;
+            onComplete();
+        });
+    }
+
     _prepareWorkspaceSwitch(workspaceIndices) {
         if (this._switchData)
             return;
