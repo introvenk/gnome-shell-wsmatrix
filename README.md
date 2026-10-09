@@ -46,6 +46,10 @@ Then log out and back in. To check that it loaded, run `gnome-extensions info ws
 
 **To update,** run the same commands again and log out and back in. An automatic update from extensions.gnome.org can replace this build with the upstream version; if that happens, run the commands again.
 
+**To manage extensions without a browser,** install GNOME's Extensions app (`sudo pacman -S gnome-extensions-app`). Avoid Extension Manager (`extension-manager`): it updates from extensions.gnome.org and can replace this build with the upstream version.
+
+What's different from upstream and how this fork is maintained: [FORK.md](FORK.md).
+
 ### Upstream release
 
 The easiest way to install this extension is via the [GNOME Shell Extensions](https://extensions.gnome.org/extension/1485/workspace-matrix/) website. Alternative installation methods are noted below.
@@ -135,5 +139,7 @@ You can develop this extension "live" while it is installed in GNOME on your sys
 5. Restart GNOME by pressing <kbd>Alt</kbd>+<kbd>F2</kbd> and running the command `r` (X.org) or log out and back in (Wayland). Do this whenever you want to apply and test a change of the code.
 
 To test changes without logging out, run `make test`. It installs the build and opens a nested GNOME Shell window (needs the `mutter-devkit` package on GNOME 49+).
+
+To run the automated checks in a nested shell, run `make check`. [TESTING.md](TESTING.md) explains them and lists the manual checks.
 
 If you change something in the gschema XML file, run `make` to recompile it. The `make` command also builds the ZIP file that can be used for new releases of this extension.
