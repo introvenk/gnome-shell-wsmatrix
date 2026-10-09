@@ -6,7 +6,7 @@ export default class WsmatrixExtension extends Extension {
     enable() {
         let settings = this.getSettings();
         let keybindings = this.getSettings(this.metadata['keybindings-schema']);
-        this.overrideWorkspace = new WorkspaceManagerOverride(settings, keybindings);
+        this.overrideWorkspace = new WorkspaceManagerOverride(settings, keybindings, this.getLogger());
         this.overrideWorkspace.enable();
         this.overrideOverview = new OverviewManager(settings);
         this.overrideOverview.enable();

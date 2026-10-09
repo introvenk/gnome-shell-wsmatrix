@@ -4,11 +4,11 @@ import GObject from 'gi://GObject';
 import St from 'gi://St';
 import {WorkspaceThumbnail} from 'resource:///org/gnome/shell/ui/workspaceThumbnail.js';
 
-var ITEM_SPACING = '12px';
+const ITEM_SPACING = '12px';
 const DIM_OPACITY = 217; // ~85%, keeps the target cell the visual anchor
 const HIGHLIGHT_TIME = 150;
 
-var SwitcherButton = GObject.registerClass(
+const SwitcherButton = GObject.registerClass(
 class SwitcherButton extends St.Button {
     _init(width, height) {
         super._init({style_class: 'item-box', reactive: true});

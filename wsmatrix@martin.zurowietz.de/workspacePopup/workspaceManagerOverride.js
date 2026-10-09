@@ -7,7 +7,6 @@ import Shell from 'gi://Shell';
 import WorkspaceSwitcherPopup from "./workspaceSwitcherPopup.js";
 import {SCROLL_TIMEOUT_TIME} from 'resource:///org/gnome/shell/ui/windowManager.js';
 import {WorkspaceAnimationController} from "./workspaceAnimation.js";
-import {PACKAGE_VERSION} from 'resource:///org/gnome/shell/misc/config.js';
 
 const WraparoundMode = {
     NONE: 0,
@@ -17,7 +16,8 @@ const WraparoundMode = {
 };
 
 export default class WorkspaceManagerOverride {
-    constructor(settings, keybindings) {
+    constructor(settings, keybindings, logger) {
+        this._logger = logger;
         this.wm = Main.wm;
         this.wm._wsPopupList = [];
         this.settings = settings;
@@ -86,73 +86,30 @@ export default class WorkspaceManagerOverride {
     }
 
     _connectSettings() {
-        this.settingsHandlerRows = this.settings.connect(
-            'changed::num-rows',
-            this._handleNumberOfWorkspacesChanged.bind(this)
-        );
-
-        this.settingsHandlerColumns = this.settings.connect(
-            'changed::num-columns',
-            this._handleNumberOfWorkspacesChanged.bind(this)
-        );
-
-        this.settingsHandlerPopupTimeout = this.settings.connect(
-            'changed::popup-timeout',
-            this._destroyWorkspaceSwitcherPopup.bind(this)
-        );
-
-        this.settingsHandlerScale = this.settings.connect(
-            'changed::scale',
-            this._destroyWorkspaceSwitcherPopup.bind(this)
-        );
-
-        this.settingsHandlerMultiMonitor = this.settings.connect(
-            'changed::multi-monitor',
-            this._handleMultiMonitorChanged.bind(this)
-        );
-
-        this.settingsHandlerShowThumbnails = this.settings.connect(
-            'changed::show-thumbnails',
-            this._destroyWorkspaceSwitcherPopup.bind(this)
-        );
-
-        this.settingsHandlerWraparoundMode = this.settings.connect(
-            'changed::wraparound-mode',
-            this._handleWraparoundModeChanged.bind(this)
-        );
-
-        this.settingsHandlerShowWorkspaceNames = this.settings.connect(
-            'changed::show-workspace-names',
-            this._destroyWorkspaceSwitcherPopup.bind(this)
-        );
-
-        this.settingsHandlerEnablePopupWorkspaceHover = this.settings.connect(
-            'changed::enable-popup-workspace-hover',
-            this._destroyWorkspaceSwitcherPopup.bind(this)
-        );
+        const destroyPopup = this._destroyWorkspaceSwitcherPopup.bind(this);
+        this.settings.connectObject(
+            'changed::num-rows', this._handleNumberOfWorkspacesChanged.bind(this),
+            'changed::num-columns', this._handleNumberOfWorkspacesChanged.bind(this),
+            'changed::multi-monitor', this._handleMultiMonitorChanged.bind(this),
+            'changed::wraparound-mode', this._handleWraparoundModeChanged.bind(this),
+            'changed::popup-timeout', destroyPopup,
+            'changed::scale', destroyPopup,
+            'changed::show-thumbnails', destroyPopup,
+            'changed::show-workspace-names', destroyPopup,
+            'changed::enable-popup-workspace-hover', destroyPopup,
+            this);
     }
 
     _disconnectSettings() {
-        this.settings.disconnect(this.settingsHandlerRows);
-        this.settings.disconnect(this.settingsHandlerColumns);
-        this.settings.disconnect(this.settingsHandlerPopupTimeout);
-        this.settings.disconnect(this.settingsHandlerScale);
-        this.settings.disconnect(this.settingsHandlerMultiMonitor);
-        this.settings.disconnect(this.settingsHandlerShowThumbnails);
-        this.settings.disconnect(this.settingsHandlerWraparoundMode);
-        this.settings.disconnect(this.settingsHandlerShowWorkspaceNames);
-        this.settings.disconnect(this.settingsHandlerEnablePopupWorkspaceHover);
+        this.settings.disconnectObject(this);
     }
 
     _connectLayoutManager() {
-        this.monitorsChanged = Main.layoutManager.connect(
-            'monitors-changed',
-            this._updateMonitors.bind(this)
-        );
+        Main.layoutManager.connectObject('monitors-changed', this._updateMonitors.bind(this), this);
     }
 
     _disconnectLayoutManager() {
-        Main.layoutManager.disconnect(this.monitorsChanged);
+        Main.layoutManager.disconnectObject(this);
     }
 
     _addKeybindings() {
@@ -290,7 +247,7 @@ export default class WorkspaceManagerOverride {
             // Removing a workspace moves its windows to the previous one, which piles up all
             // windows of surplus workspaces on the last workspace of the grid (#328).
             if (last.list_windows().some(w => !w.is_on_all_workspaces())) {
-                console.warn(`wsmatrix: keeping ${this.wsManager.n_workspaces - total} surplus workspace(s) because they still contain windows`);
+                this._logger.warn(`keeping ${this.wsManager.n_workspaces - total} surplus workspace(s) because they still contain windows`);
                 break;
             }
             this.wsManager.remove_workspace(last, global.get_current_time());

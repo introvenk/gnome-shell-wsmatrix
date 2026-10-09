@@ -2,7 +2,6 @@ import ControlsManagerLayout from './controlsManagerLayout.js';
 import SecondaryMonitorDisplay from './secondaryMonitorDisplay.js';
 import ThumbnailsBox from './thumbnailsBox.js';
 import WorkspacesView from './workspacesView.js';
-import {PACKAGE_VERSION} from 'resource:///org/gnome/shell/misc/config.js';
 
 export default class OverviewManager {
     constructor(settings) {
@@ -21,14 +20,12 @@ export default class OverviewManager {
     }
 
     _connectSettings() {
-        this.settingsHandlerShowOverviewGrid = this._settings.connect(
-            'changed::show-overview-grid',
-            this._handleShowOverviewGridChanged.bind(this)
-        );
+        this._settings.connectObject('changed::show-overview-grid',
+            this._handleShowOverviewGridChanged.bind(this), this);
     }
 
     _disconnectSettings() {
-        this._settings.disconnect(this.settingsHandlerShowOverviewGrid);
+        this._settings.disconnectObject(this);
     }
 
     _handleShowOverviewGridChanged() {
