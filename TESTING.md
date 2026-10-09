@@ -12,7 +12,7 @@
 | `cycle` | Switching after disable and re-enable (what lock and unlock do); disable restores the layout and leaves a working overview (#216, #179) |
 | `overview` | Drop targets and clicks on every row, strip height, which rows are shown and clipped, app grid |
 | `swipe` | Horizontal and vertical swipes, the popup after a swipe, restoring GNOME's gestures |
-| `features` | Ctrl+Alt+number and Ctrl+Alt+BackSpace through a virtual keyboard; the top-bar grid map |
+| `features` | Ctrl+Alt+number and Ctrl+Alt+BackSpace through a virtual keyboard; the grid of dots in the Activities button |
 | `multimonitor` | Run with `MONITORS=2`: one grab for all popups, closing one closes all, overview grid on the second monitor (#224, #253, #255) |
 
 Requirements:
@@ -69,7 +69,7 @@ Run these after logging back in on a new build.
 
 25. <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd> opens that cell; add <kbd>Shift</kbd> to move the focused window there.
 26. <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>BackSpace</kbd> goes back to the previous workspace, and pressing it again returns.
-27. The grid next to Activities shows the active cell in your accent colour and fills cells that have windows. Clicking a cell opens it, and scrolling over the grid moves through it.
+27. The Activities button shows a grid of dots instead of GNOME's row. The active dot is full size and glides to the new cell on a switch, dots of workspaces with windows are brighter, scrolling over it moves through the grid, and clicking still opens the overview. Turning "Show workspace grid in the top bar" off brings GNOME's row back.
 
 **Second monitor**
 
