@@ -22,7 +22,12 @@ sed "s|@OUT@|$OUT|" "$DIR/prelude.js" >> "$OUT/ext/extension.js"
 cat "$DIR/$NAME.js" >> "$OUT/ext/extension.js"
 (cd "$OUT/ext" && zip -qr ../test.zip .)
 
-trap 'gnome-extensions install --force "$UUID.zip"' EXIT
+# The nested shell exits before the shell's start-up crash guard clears its marker;
+# a leftover marker makes the next shell start (nested or the real session) disable
+# all extensions.
+CRASH_GUARD="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gnome-shell-disable-extensions"
+trap 'gnome-extensions install --force "$UUID.zip"; rm -f "$CRASH_GUARD"' EXIT
+rm -f "$CRASH_GUARD"
 gnome-extensions install --force "$OUT/test.zip"
 # MONITORS=2 adds a second virtual monitor for the multi-monitor scenarios.
 extra=()
