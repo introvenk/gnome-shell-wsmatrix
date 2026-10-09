@@ -1,7 +1,10 @@
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import Clutter from 'gi://Clutter';
 import GObject from 'gi://GObject';
 import Meta from 'gi://Meta';
+import Shell from 'gi://Shell';
 import St from 'gi://St';
+import {SwipeTracker} from 'resource:///org/gnome/shell/ui/swipeTracker.js';
 import {
     WORKSPACE_SPACING,
     WorkspaceGroup,
@@ -76,6 +79,12 @@ class MonitorGroup extends GMonitorGroup {
         return this._monitor.height + spacing;
     }
 
+    // Swipe distance along the axis this group moves on.
+    get baseDistance() {
+        const {fromRow, targetRow} = this._directions();
+        return targetRow !== fromRow ? this.baseDistanceY : this.baseDistanceX;
+    }
+
     get progress() {
         const {fromRow, fromColumn, targetRow, targetColumn} = this._directions();
 
@@ -126,6 +135,77 @@ class MonitorGroup extends GMonitorGroup {
 });
 
 export class WorkspaceAnimationController extends GWorkspaceAnimationController {
+    // Called after a swipe lands on another workspace.
+    onSwipeComplete = null;
+
+    // The inherited tracker only reports horizontal swipes; add a vertical one so
+    // swipes move through the grid in all four directions.
+    enableVerticalSwipe() {
+        if (this._verticalSwipeTracker)
+            return;
+        const tracker = new SwipeTracker(global.stage, Clutter.Orientation.VERTICAL,
+            Shell.ActionMode.NORMAL, {
+                allowDrag: false,
+                phase: Clutter.EventPhase.CAPTURE,
+                name: 'wsmatrix vertical swipe tracker',
+            });
+        tracker.connect('begin', this._switchWorkspaceBegin.bind(this));
+        tracker.connect('update', this._switchWorkspaceUpdate.bind(this));
+        tracker.connect('end', this._switchWorkspaceEnd.bind(this));
+        global.display.bind_property('compositor-modifiers', tracker,
+            'scroll-modifiers', GObject.BindingFlags.SYNC_CREATE);
+        this._verticalSwipeTracker = tracker;
+    }
+
+    disableVerticalSwipe() {
+        this._verticalSwipeTracker?.destroy();
+        this._verticalSwipeTracker = null;
+    }
+
+    destroy() {
+        this.disableVerticalSwipe();
+        this._swipeTracker.destroy();
+    }
+
+    // A swipe moves along the active row (horizontal) or column (vertical) only.
+    _switchWorkspaceBegin(tracker, monitor) {
+        const workspaceManager = global.workspace_manager;
+        const {layout_columns: columns, layout_rows: rows} = workspaceManager;
+        const active = workspaceManager.get_active_workspace_index();
+        const orientation = tracker.orientation;
+        const horizontal = orientation === Clutter.Orientation.HORIZONTAL;
+        const row = Math.floor(active / columns);
+        const column = active % columns;
+        const line = horizontal
+            ? Array.from({length: columns}, (_, c) => row * columns + c)
+            : Array.from({length: rows}, (_, r) => r * columns + column);
+        if (line.length < 2)
+            return;
+
+        this._swipeLine = line;
+        try {
+            super._switchWorkspaceBegin(tracker, monitor);
+        } finally {
+            this._swipeLine = null;
+            // The shell forces every tracker horizontal for a grid layout.
+            tracker.orientation = orientation;
+        }
+    }
+
+    _switchWorkspaceEnd(tracker, duration, endProgress) {
+        if (this._switchData)
+            this._swipeFrom = global.workspace_manager.get_active_workspace_index();
+        super._switchWorkspaceEnd(tracker, duration, endProgress);
+    }
+
+    _finishWorkspaceSwitch(switchData) {
+        super._finishWorkspaceSwitch(switchData);
+        const from = this._swipeFrom;
+        this._swipeFrom = undefined;
+        if (from !== undefined && from !== global.workspace_manager.get_active_workspace_index())
+            this.onSwipeComplete?.();
+    }
+
     animateSwitch(from, to, direction, onComplete) {
         // The grid MonitorGroups only know the workspaces of their own switch, so a running
         // switch can't be reused like upstream does. Finish it before starting the new one.
@@ -159,8 +239,7 @@ export class WorkspaceAnimationController extends GWorkspaceAnimationController 
         switchData.gestureActivated = false;
         switchData.inProgress = false;
 
-        if (!workspaceIndices)
-            workspaceIndices = [...Array(nWorkspaces).keys()];
+        workspaceIndices ??= this._swipeLine ?? [...Array(nWorkspaces).keys()];
 
         const monitors = Meta.prefs_get_workspaces_only_on_primary()
             ? [Main.layoutManager.primaryMonitor] : Main.layoutManager.monitors;

@@ -24,6 +24,7 @@ This is a clone of the [Workspace Grid](https://github.com/zakkak/workspace-grid
 - Workspace overview on <kbd>Super</kbd>+<kbd>W</kbd>.
 - Workspace switcher popup on all monitors (optional).
 - Workspace grid in the activity overview (optional).
+- Touchpad swipes along the grid rows, and along columns too (optional).
 
 ## Installation
 

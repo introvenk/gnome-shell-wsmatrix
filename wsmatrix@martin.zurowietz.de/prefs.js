@@ -68,6 +68,13 @@ export default class Prefs extends ExtensionPreferences {
         group.add(this._createSwitcherRow('Show popup for all monitors', 'multi-monitor', settings));
 
         group = new Adw.PreferencesGroup({
+            title: _('Gesture Settings'),
+        });
+        page.add(group);
+
+        group.add(this._createSwitcherRow('Switch rows with vertical touchpad swipes', 'vertical-swipe', settings));
+
+        group = new Adw.PreferencesGroup({
             title: _('Overview Settings'),
         });
         page.add(group);

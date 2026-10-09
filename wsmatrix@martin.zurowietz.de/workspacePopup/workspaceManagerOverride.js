@@ -40,6 +40,7 @@ export default class WorkspaceManagerOverride {
         this._overrideDynamicWorkspaces();
         this._overrideKeybindingHandlers();
         this._overrideOriginalProperties();
+        this._takeOverSwipe();
         this._handleNumberOfWorkspacesChanged();
         this._handleMultiMonitorChanged();
         this._handleWraparoundModeChanged();
@@ -54,6 +55,7 @@ export default class WorkspaceManagerOverride {
         this._restoreLayout();
         this._restoreKeybindingHandlers();
         this._restoreDynamicWorkspaces();
+        this._restoreSwipe();
         this._restoreOriginalProperties();
         this._disconnectSettings();
         this._notify();
@@ -85,6 +87,51 @@ export default class WorkspaceManagerOverride {
         }, this);
     }
 
+    // The shell's own controller keeps its swipe tracker on the stage, so every swipe
+    // ran twice. Turn its gestures off (enabling is toggled by the shell itself, the
+    // allowed modes are not) and let ours handle them.
+    _takeOverSwipe() {
+        const tracker = this.wm._overrideProperties._workspaceAnimation?._swipeTracker;
+        this._mutedSwipeGestures = [tracker, tracker?._touchpadGesture, tracker?._scrollGesture]
+            .filter(g => g)
+            .map(g => {
+                const modes = g._allowedModes;
+                g._allowedModes = Shell.ActionMode.NONE;
+                return [g, modes];
+            });
+
+        this._workspaceAnimation.onSwipeComplete = () => this._showWorkspaceSwitcherPopup(false, true);
+        this._handleVerticalSwipeChanged();
+    }
+
+    _restoreSwipe() {
+        this._workspaceAnimation.destroy();
+        this._restoreOverviewSwipe();
+        this._mutedSwipeGestures.forEach(([g, modes]) => (g._allowedModes = modes));
+        this._mutedSwipeGestures = [];
+    }
+
+    // Vertical swipes open the overview by default, so taking them over is opt-in.
+    _handleVerticalSwipeChanged() {
+        if (this.settings.get_boolean('vertical-swipe')) {
+            if (this._overviewSwipeModes === undefined && Main.overview._swipeTracker) {
+                this._overviewSwipeModes = Main.overview._swipeTracker._allowedModes;
+                Main.overview._swipeTracker._allowedModes = Shell.ActionMode.NONE;
+            }
+            this._workspaceAnimation.enableVerticalSwipe();
+        } else {
+            this._workspaceAnimation.disableVerticalSwipe();
+            this._restoreOverviewSwipe();
+        }
+    }
+
+    _restoreOverviewSwipe() {
+        if (this._overviewSwipeModes === undefined)
+            return;
+        Main.overview._swipeTracker._allowedModes = this._overviewSwipeModes;
+        this._overviewSwipeModes = undefined;
+    }
+
     _connectSettings() {
         const destroyPopup = this._destroyWorkspaceSwitcherPopup.bind(this);
         this.settings.connectObject(
@@ -92,6 +139,7 @@ export default class WorkspaceManagerOverride {
             'changed::num-columns', this._handleNumberOfWorkspacesChanged.bind(this),
             'changed::multi-monitor', this._handleMultiMonitorChanged.bind(this),
             'changed::wraparound-mode', this._handleWraparoundModeChanged.bind(this),
+            'changed::vertical-swipe', this._handleVerticalSwipeChanged.bind(this),
             'changed::popup-timeout', destroyPopup,
             'changed::scale', destroyPopup,
             'changed::show-thumbnails', destroyPopup,
@@ -399,7 +447,7 @@ export default class WorkspaceManagerOverride {
     }
 
 
-    _showWorkspaceSwitcherPopup(toggle) {
+    _showWorkspaceSwitcherPopup(toggle, passive = false) {
         if (Main.overview.visible || !this.settings.get_boolean('show-popup')) {
             return;
         }
@@ -434,17 +482,22 @@ export default class WorkspaceManagerOverride {
                     }
                 });
 
-                let event = Clutter.get_current_event();
-                // gnome-shell's SwitcherPopup.show() seems to expect a modifier
-                // mask from a configured keybinding, not from an event's state.
-                // On Wayland, the event's state includes ambient modifiers like
-                // caps lock and numlock (Mod2) that generally wouldn't be part
-                // of a keybinding, so we clear those bits so that SwitcherPopup
-                // can close the popup when the relevant modifiers are released,
-                // instead of waiting for caps/num lock to be released.
-                const modifier_mask = Clutter.ModifierType.MODIFIER_MASK & ~Clutter.ModifierType.LOCK_MASK & ~Clutter.ModifierType.MOD2_MASK;
-                let modifiers = event ? event.get_state() & modifier_mask : 0;
-                this.wm._wsPopupList[monitorIndex].showToggle(false, null, modifiers, toggle);
+                if (passive) {
+                    // After a swipe: no modal grab, or it would swallow the next swipe.
+                    popup.showPassive();
+                } else {
+                    let event = Clutter.get_current_event();
+                    // gnome-shell's SwitcherPopup.show() seems to expect a modifier
+                    // mask from a configured keybinding, not from an event's state.
+                    // On Wayland, the event's state includes ambient modifiers like
+                    // caps lock and numlock (Mod2) that generally wouldn't be part
+                    // of a keybinding, so we clear those bits so that SwitcherPopup
+                    // can close the popup when the relevant modifiers are released,
+                    // instead of waiting for caps/num lock to be released.
+                    const modifier_mask = Clutter.ModifierType.MODIFIER_MASK & ~Clutter.ModifierType.LOCK_MASK & ~Clutter.ModifierType.MOD2_MASK;
+                    let modifiers = event ? event.get_state() & modifier_mask : 0;
+                    this.wm._wsPopupList[monitorIndex].showToggle(false, null, modifiers, toggle);
+                }
                 if (monitorIndex === Main.layoutManager.primaryIndex) {
                     this.wm._workspaceSwitcherPopup = this.wm._wsPopupList[monitorIndex];
                 }

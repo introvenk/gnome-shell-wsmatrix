@@ -46,6 +46,11 @@
             <default>'none'</default>
             <summary>Wraparound workspaces while navigating</summary>
         </key>
+        <key type="b" name="vertical-swipe">
+            <default>false</default>
+            <summary>Switch rows with vertical touchpad swipes</summary>
+            <description>Vertical multi-finger swipes move between grid rows instead of opening the overview.</description>
+        </key>
         <key type="b" name="show-overview-grid">
             <default>true</default>
             <summary>Display workspaces as grid in the activities overview</summary>

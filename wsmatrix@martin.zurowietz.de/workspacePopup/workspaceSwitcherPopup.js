@@ -16,6 +16,8 @@ const ENTRANCE_SCALE = 0.96;
 const INDICATOR_TIME = 150;
 // Accumulated scroll distance that moves the selection by one cell.
 const SCROLL_STEP = 1;
+// How long a popup shown after a swipe stays up when the timeout is 0 (no keys to release).
+const PASSIVE_TIMEOUT = 500;
 const BLUR_RADIUS = 40;
 // Background blur is rectangular; insetting it by this fraction of the corner radius keeps
 // its corners inside the rounded popup outline (1 - 1/sqrt(2) ~= 0.29).
@@ -154,6 +156,25 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
             this._animateEntrance();
             modals.push(this);
         }
+    }
+
+    // Shown after a touchpad swipe: without a modal grab, which would swallow the next
+    // swipe, and closed by the timeout since there are no keys to release.
+    showPassive() {
+        if (this._items.length === 0)
+            return;
+
+        this.reactive = false;
+        this._popupTimeout ||= PASSIVE_TIMEOUT;
+        this.add_child(this._switcherList);
+        this.insert_child_below(this._backdrop, this._switcherList);
+        this.add_child(this._indicator);
+        this.visible = true;
+        this.get_allocation_box();
+        this._initialSelection(false, null);
+        this.resetTimeout();
+        this._animateEntrance();
+        modals.push(this);
     }
 
     fadeAndDestroy() {
