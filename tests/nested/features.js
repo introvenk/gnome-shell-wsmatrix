@@ -15,11 +15,13 @@ function scenario(ext, T) {
     };
     const indicator = () => ext.overrideWorkspace._gridIndicator;
     const activities = () => T.main.panel.statusArea.activities;
-    const brightest = () => {
-        const opacities = indicator()._dots.map(d => d.opacity);
-        return opacities.indexOf(Math.max(...opacities));
+    // The cell the pill rests on, as a workspace index.
+    const pillCell = () => {
+        const g = indicator();
+        return Math.round(g._pill.translation_y / g._pitch[1]) * c + Math.round(g._pill.translation_x / g._pitch[0]);
     };
     const settings = ext.getSettings();
+    let rowsBefore, columnsBefore;
 
     return [
         [2400, () => T.main.overview.hide()],
@@ -31,7 +33,9 @@ function scenario(ext, T) {
         [3000, () => press('Control_L', 'Alt_L', '5')],
         [3100, () => T.shot('panel-gliding')],
         [3600, () => T.expect('Ctrl+Alt+5 opens cell 5', T.active(), 4)],
-        [3700, () => T.expect('the active dot is the brightest', brightest(), 4)],
+        [3700, () => T.expect('the pill rests on the active cell', pillCell(), 4)],
+        [3720, () => T.expect('screen readers hear the position',
+            activities().accessible_description, 'Workspace 5 of 9, row 2, column 2')],
         [3750, () => T.shot('panel-grid')],
         [4000, () => press('Control_L', 'Alt_L', '2')],
         [4600, () => T.expect('Ctrl+Alt+2 opens cell 2', T.active(), 1)],
@@ -48,5 +52,24 @@ function scenario(ext, T) {
         }],
         [9000, () => settings.set_boolean('show-panel-indicator', true)],
         [9200, () => T.expect('and back on', !!indicator(), true)],
+        // A larger grid adds dots with a scale-in and still fits the top bar.
+        [9500, () => {
+            rowsBefore = settings.get_int('num-rows');
+            columnsBefore = settings.get_int('num-columns');
+            settings.set_int('num-rows', 5);
+            settings.set_int('num-columns', 5);
+        }],
+        [9600, () => T.expect('new dots scale in', indicator()._dots.at(-1).scale_x < 1, true)],
+        [10400, () => {
+            T.expect('25 dots', indicator()._dots.length, 25);
+            T.expect('all dots fully in', indicator()._dots.every(d => d.scale_x === 1), true);
+            T.expect('the grid fits the top bar', indicator().height <= T.main.panel.height, true);
+            T.shot('panel-5x5');
+        }],
+        [10600, () => {
+            settings.set_int('num-rows', rowsBefore);
+            settings.set_int('num-columns', columnsBefore);
+        }],
+        [11400, () => T.expect('dots scale out and go', indicator()._dots.length, rowsBefore * columnsBefore)],
     ];
 }
