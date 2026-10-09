@@ -20,3 +20,8 @@ test: default
 check:
 	@set -e; for s in popup scroll grab cycle overview swipe features; do echo "== $$s"; tests/nested/run.sh $$s; done
 	@echo "== multimonitor"; MONITORS=2 tests/nested/run.sh multimonitor
+
+# Render the Activities grid in a few states and open the picture.
+look:
+	@out=$$(mktemp -d -t wsmatrix-look-XXXX); OUT=$$out tests/nested/run.sh look >/dev/null; \
+	python3 tests/nested/montage.py $$out/shots | xargs -r xdg-open

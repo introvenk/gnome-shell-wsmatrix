@@ -24,6 +24,8 @@ The runner installs a test build over the installed extension and puts the norma
 
 The shell runs headless, so no window appears and you can keep working while it runs.
 
+To look at the Activities grid, run `make look`. It renders the grid at a few sizes and states and opens one picture with each at native size and enlarged.
+
 Swipes are simulated by emitting the swipe trackers' signals, so real touchpad feel still needs the manual checks below.
 
 ## Manual checks

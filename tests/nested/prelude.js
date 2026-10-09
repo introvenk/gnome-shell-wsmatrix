@@ -7,6 +7,7 @@ import * as TMain from 'resource:///org/gnome/shell/ui/main.js';
 
 const T = {
     main: TMain,
+    out: '@OUT@',
     log: msg => console.log(`WSMTEST ${msg}`),
     expect(name, actual, expected) {
         const ok = JSON.stringify(actual) === JSON.stringify(expected);
