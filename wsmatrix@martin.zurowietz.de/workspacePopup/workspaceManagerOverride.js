@@ -285,10 +285,14 @@ export default class WorkspaceManagerOverride {
         }
 
         while (this.wsManager.n_workspaces > total) {
-            this.wsManager.remove_workspace(
-                this.wsManager.get_workspace_by_index(this.wsManager.n_workspaces - 1),
-                global.get_current_time()
-            );
+            const last = this.wsManager.get_workspace_by_index(this.wsManager.n_workspaces - 1);
+            // Removing a workspace moves its windows to the previous one, which piles up all
+            // windows of surplus workspaces on the last workspace of the grid (#328).
+            if (last.list_windows().some(w => !w.is_on_all_workspaces())) {
+                console.warn(`wsmatrix: keeping ${this.wsManager.n_workspaces - total} surplus workspace(s) because they still contain windows`);
+                break;
+            }
+            this.wsManager.remove_workspace(last, global.get_current_time());
         }
     }
 
