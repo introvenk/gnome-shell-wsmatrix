@@ -9,6 +9,8 @@ GNOME shell extension to arrange workspaces in a two dimensional grid with works
    <sup>Theme: <a href="https://github.com/mzur/Numix-Complement">Numix-Complement</a></sup>
 </p>
 
+> **This is a maintained fork of [mzur/gnome-shell-wsmatrix](https://github.com/mzur/gnome-shell-wsmatrix).** It supports GNOME 51 and fixes several bugs (popup crashes, slowdowns over time, windows piling onto one workspace, dropping windows on lower rows of the overview grid). It also refreshes the popup's look and animations. Upstream improvements are merged here as they arrive.
+
 This is a clone of the [Workspace Grid](https://github.com/zakkak/workspace-grid) extension. I was not able to wrap my head around Workspace Grid so I started to implement my own extension to get the features I wanted.
 
 ## Features
@@ -24,6 +26,26 @@ This is a clone of the [Workspace Grid](https://github.com/zakkak/workspace-grid
 - Workspace grid in the activity overview (optional).
 
 ## Installation
+
+### This fork (recommended)
+
+No git needed. The commands below are for Arch; on other distros, install `make`, `zip` and `glib-compile-schemas` with your package manager.
+
+```bash
+sudo pacman -S --needed make zip glib2
+cd /tmp
+curl -L -o wsmatrix.tar.gz https://github.com/introvenk/gnome-shell-wsmatrix/archive/refs/heads/master.tar.gz
+tar xzf wsmatrix.tar.gz && cd gnome-shell-wsmatrix-master
+make
+gnome-extensions install --force wsmatrix@martin.zurowietz.de.zip
+gnome-extensions enable wsmatrix@martin.zurowietz.de
+```
+
+Then log out and back in. To check that it loaded, run `gnome-extensions info wsmatrix@martin.zurowietz.de | grep State`; it should print `State: ACTIVE`. If it doesn't, attach the output of `journalctl --user -b -g wsmatrix` to an issue.
+
+**To update,** run the same commands again and log out and back in. An automatic update from extensions.gnome.org can replace this build with the upstream version; if that happens, run the commands again.
+
+### Upstream release
 
 The easiest way to install this extension is via the [GNOME Shell Extensions](https://extensions.gnome.org/extension/1485/workspace-matrix/) website. Alternative installation methods are noted below.
 
@@ -110,5 +132,7 @@ You can develop this extension "live" while it is installed in GNOME on your sys
    ln -s ~/code/gnome-shell-wsmatrix/wsmatrix@martin.zurowietz.de ~/.local/share/gnome-shell/extensions/wsmatrix@martin.zurowietz.de
    ```
 5. Restart GNOME by pressing <kbd>Alt</kbd>+<kbd>F2</kbd> and running the command `r` (X.org) or log out and back in (Wayland). Do this whenever you want to apply and test a change of the code.
+
+To test changes without logging out, run `make test`. It installs the build and opens a nested GNOME Shell window (needs the `mutter-devkit` package on GNOME 49+).
 
 If you change something in the gschema XML file, run `make` to recompile it. The `make` command also builds the ZIP file that can be used for new releases of this extension.
