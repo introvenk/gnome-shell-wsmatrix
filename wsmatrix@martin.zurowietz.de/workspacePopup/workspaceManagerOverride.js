@@ -161,7 +161,7 @@ export default class WorkspaceManagerOverride {
     }
 
     _addKeybindings() {
-        this.wm.addKeybinding(
+        this._toggleAction = this.wm.addKeybinding(
             'workspace-overview-toggle',
             this._keybindings,
             Meta.KeyBindingFlags.NONE,
@@ -567,6 +567,7 @@ export default class WorkspaceManagerOverride {
         options.popupTimeout = this.settings.get_int('popup-timeout')
         options.enablePopupWorkspaceHover = this.settings.get_boolean('enable-popup-workspace-hover');
         options.overveiwKeybindingActions = this._overviewKeybindingActions;
+        options.toggleAction = this._toggleAction;
 
         return new WorkspaceSwitcherPopup(options, this);
     }

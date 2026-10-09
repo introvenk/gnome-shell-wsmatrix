@@ -38,6 +38,7 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
         this._enablePopupWorkspaceHover = options.enablePopupWorkspaceHover;
         this._wm = wm;
         this._toggle = options.toggle || false;
+        this._toggleAction = options.toggleAction;
         this._items = this._createThumbnails();
         this._switcherList = new WorkspaceSwitcherPopupList(this._items, this._createLabels(), options);
         this._overviewKeybindingActions = options.overveiwKeybindingActions;
@@ -290,6 +291,13 @@ class WorkspaceSwitcherPopup extends SwitcherPopup {
 
                     return Clutter.EVENT_STOP;
                 }
+            }
+
+            // The shortcut that opened the popup closes it, also when confirm is bound
+            // to the same keys and so never reaches the loop above (#265).
+            if (_action === this._toggleAction) {
+                this.fadeAndDestroy();
+                return Clutter.EVENT_STOP;
             }
         }
 
