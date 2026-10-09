@@ -15,10 +15,10 @@ function scenario(ext, T) {
     };
     const indicator = () => ext.overrideWorkspace._gridIndicator;
     const activities = () => T.main.panel.statusArea.activities;
-    // The cell the pill rests on, as a workspace index.
-    const pillCell = () => {
+    // The cell the ring rests on, as a workspace index.
+    const ringCell = () => {
         const g = indicator();
-        return Math.round(g._pill.translation_y / g._pitch[1]) * c + Math.round(g._pill.translation_x / g._pitch[0]);
+        return Math.round(g._ring.translation_y / g._pitch[1]) * c + Math.round(g._ring.translation_x / g._pitch[0]);
     };
     const settings = ext.getSettings();
     let rowsBefore, columnsBefore;
@@ -33,7 +33,7 @@ function scenario(ext, T) {
         [3000, () => press('Control_L', 'Alt_L', '5')],
         [3100, () => T.shot('panel-gliding')],
         [3600, () => T.expect('Ctrl+Alt+5 opens cell 5', T.active(), 4)],
-        [3700, () => T.expect('the pill rests on the active cell', pillCell(), 4)],
+        [3700, () => T.expect('the ring rests on the active cell', ringCell(), 4)],
         [3720, () => T.expect('screen readers hear the position',
             activities().accessible_description, 'Workspace 5 of 9, row 2, column 2')],
         [3750, () => T.shot('panel-grid')],

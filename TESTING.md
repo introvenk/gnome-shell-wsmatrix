@@ -12,7 +12,7 @@
 | `cycle` | Switching after disable and re-enable (what lock and unlock do); disable restores the layout and leaves a working overview (#216, #179) |
 | `overview` | Drop targets and clicks on every row, strip height, which rows are shown and clipped, app grid |
 | `swipe` | Horizontal and vertical swipes, the popup after a swipe, restoring GNOME's gestures |
-| `features` | Ctrl+Alt+number and Ctrl+Alt+BackSpace through a virtual keyboard; the grid of dots in the Activities button: pill position, screen-reader text, fitting a 5×5 grid, dots scaling in and out |
+| `features` | Ctrl+Alt+number and Ctrl+Alt+BackSpace through a virtual keyboard; the grid of dots in the Activities button: ring position, screen-reader text, fitting a 5×5 grid, dots scaling in and out |
 | `multimonitor` | Run with `MONITORS=2`: one grab for all popups, closing one closes all, overview grid on the second monitor (#224, #253, #255) |
 
 Requirements:
@@ -70,7 +70,7 @@ Run these after logging back in on a new build.
 
 25. <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>1</kbd>…<kbd>9</kbd> opens that cell; add <kbd>Shift</kbd> to move the focused window there.
 26. <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>BackSpace</kbd> goes back to the previous workspace, and pressing it again returns.
-27. The Activities button shows a grid of dots instead of GNOME's row. A pill marks the active workspace and glides to the new cell on a switch (it jumps with Reduce Animation on), dots of workspaces with windows are brighter, a 5×5 grid still fits the bar, changing the grid size scales dots in and out, the dots switch to the overview's colour while it is open, scrolling over it moves through the grid, and clicking still opens the overview. Turning "Show workspace grid in the top bar" off brings GNOME's row back.
+27. The Activities button shows a grid of dots instead of GNOME's row. A ring around the dot marks the active workspace and glides to the new cell on a switch (it jumps with Reduce Animation on), dots of workspaces with windows are brighter, a 5×5 grid still fits the bar, changing the grid size scales dots in and out, the dots switch to the overview's colour while it is open, scrolling over it moves through the grid, and clicking still opens the overview. Turning "Show workspace grid in the top bar" off brings GNOME's row back.
 
 **Second monitor**
 
