@@ -2,7 +2,7 @@
 
 ## Automated checks
 
-`make check` runs each scenario in `tests/nested/` in a nested GNOME Shell window and prints PASS or FAIL for each check. To run one scenario: `tests/nested/run.sh overview`.
+`make check` runs each scenario in `tests/nested/` in a headless GNOME Shell and prints PASS or FAIL for each check. To run one scenario: `tests/nested/run.sh overview`.
 
 | Scenario | Checks |
 |---|---|
@@ -17,13 +17,12 @@
 
 Requirements:
 
-- the `mutter-devkit` package;
 - the extension enabled, with a grid of at least 2×2;
 - the installed extension must not be a symlink to your checkout. The runner refuses to run if it is, because installing over a symlink replaces the source.
 
 The runner installs a test build over the installed extension and puts the normal build back afterwards. The shell you're logged into keeps running the code it loaded at login. Screenshots and the shell log go to a temporary folder printed at the end.
 
-Keep the nested window visible while a run is going. Animations only advance while it draws frames, so a hidden window can make timing-based checks fail.
+The shell runs headless, so no window appears and you can keep working while it runs.
 
 Swipes are simulated by emitting the swipe trackers' signals, so real touchpad feel still needs the manual checks below.
 

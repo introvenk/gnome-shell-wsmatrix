@@ -41,8 +41,8 @@ WsmatrixExtension.prototype.enable = function () {
     T.switch = dir => ext.overrideWorkspace._showWorkspaceSwitcher(
         global.display, null, null, `switch-to-workspace-${dir}`);
 
-    // Steps are [ms after startup, fn]. Start with the overview closed on workspace 0.
-    const steps = [[1500, () => TMain.overview.hide()], [2000, () => T.goTo(0)], ...scenario(ext, T)];
+    // Steps are [ms after the start-up overview has closed, fn]. Start on workspace 0.
+    const steps = [[1500, () => {}], [2000, () => T.goTo(0)], ...scenario(ext, T)];
     const end = Math.max(...steps.map(([ms]) => ms)) + 1000;
     steps.push([end, () => T.log('DONE')], [end + 500, () => global.context.terminate()]);
     const run = () => {
@@ -57,9 +57,20 @@ WsmatrixExtension.prototype.enable = function () {
             });
         }
     };
-    // The shell opens the overview once startup completes; start the clock after that.
+    // The shell opens the overview once start-up completes, with an animation that can
+    // swallow an early hide(). Keep hiding until it's really closed, then start the clock.
+    const closeOverviewThenRun = () => {
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, 100, () => {
+            if (TMain.overview.visible || TMain.overview.animationInProgress) {
+                TMain.overview.hide();
+                return GLib.SOURCE_CONTINUE;
+            }
+            run();
+            return GLib.SOURCE_REMOVE;
+        });
+    };
     if (TMain.layoutManager._startingUp)
-        TMain.layoutManager.connect('startup-complete', run);
+        TMain.layoutManager.connect('startup-complete', closeOverviewThenRun);
     else
-        run();
+        closeOverviewThenRun();
 };

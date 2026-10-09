@@ -29,11 +29,12 @@ CRASH_GUARD="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/gnome-shell-disable-extensio
 trap 'gnome-extensions install --force "$UUID.zip"; rm -f "$CRASH_GUARD"' EXIT
 rm -f "$CRASH_GUARD"
 gnome-extensions install --force "$OUT/test.zip"
+# Headless: no window on the desktop, and frames don't stall when nothing shows it.
 # MONITORS=2 adds a second virtual monitor for the multi-monitor scenarios.
-extra=()
-[ "${MONITORS:-1}" -ge 2 ] && extra=(--virtual-monitor 1280x800)
-MUTTER_DEBUG_DUMMY_MODE_SPECS=1600x900 timeout "${TIMEOUT:-30}" \
-    dbus-run-session gnome-shell --devkit --wayland "${extra[@]}" > "$OUT/shell.log" 2>&1 || true
+monitors=(--virtual-monitor 1600x900)
+[ "${MONITORS:-1}" -ge 2 ] && monitors+=(--virtual-monitor 1280x800)
+timeout "${TIMEOUT:-30}" dbus-run-session gnome-shell --headless --wayland --no-x11 \
+    --wayland-display "wsmatrix-test-$$" "${monitors[@]}" > "$OUT/shell.log" 2>&1 || true
 
 grep -o 'WSMTEST .*' "$OUT/shell.log" | sed 's/^WSMTEST //' || true
 # JS errors whose stack points into the extension (the shell logs unrelated ones too).
