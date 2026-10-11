@@ -21,6 +21,10 @@ function scenario(ext, T) {
     };
 
     return [
+        [1500, () => settings.set_boolean('show-panel-indicator', false)],
+        [1800, () => T.goTo(4)],
+        [2300, grab('native GNOME')],
+        [2400, () => settings.set_boolean('show-panel-indicator', true)],
         [2500, () => T.goTo(4)],
         [3200, grab('3x3 active centre')],
         [3300, () => T.goTo(0)],
