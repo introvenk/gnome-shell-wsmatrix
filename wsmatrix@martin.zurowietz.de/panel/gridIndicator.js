@@ -10,22 +10,23 @@ const EMPTY_OPACITY = 0.35;
 const OCCUPIED_OPACITY = 0.6;
 const GLIDE_TIME = 250;
 const SCALE_TIME = 500;
-// Share of the top bar's height the grid may use; larger grids shrink to fit, down to
-// these sizes. Everything stays on whole pixels so tiny dots render round and even.
-const MAX_HEIGHT_SHARE = 0.7;
-const MIN_DOT_SIZE = 3;
+// Share of the top bar's height the grid may use, about the height of the button's
+// highlight. Larger grids fit by flattening dots into short bars, down to MIN_DOT_HEIGHT,
+// keeping their width: the bar has width to spare, not height. Everything stays on whole
+// pixels so tiny dots render even.
+const MAX_HEIGHT_SHARE = 0.8;
+const MIN_DOT_HEIGHT = 3;
 const MIN_SPACING = 1;
 // Inactive dots are drawn this many pixels smaller on each side than their cell, like the
 // shell's smaller inactive dots, but without scaling, which would blur them. Only for
 // dots big enough to stay round.
 const INACTIVE_INSET = 1;
 const MIN_INSET_SIZE = 5;
-// The ring around the active dot reaches this far past its cell on every side, into the
-// gaps, so its outline sits on whole pixels clear of the dot and its neighbours.
-// Shrunken dots on large grids leave no room for that, so the ring thins to one pixel,
-// and on the tiniest dots it is left out: the active dot's full brightness marks it.
-const RING_SPREAD = 2;
-const THIN_RING_BELOW = 6;
+// The ring around the active dot reaches this far past its cell, into the gaps, so its
+// outline sits on whole pixels clear of the dot and its neighbours. Where the row gap is
+// tighter it reaches less far and thins to keep a pixel of space around the dot.
+const RING_SPREAD = 3;
+const RING_WIDTH = 3;
 
 function reducedMotion() {
     return St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
@@ -156,27 +157,28 @@ class GridIndicator extends St.Widget {
         const columns = Math.max(1, workspaceManager.layout_columns);
         const rows = Math.max(1, Math.ceil(workspaceManager.n_workspaces / columns));
         const node = this.get_theme_node();
-        let size = Math.round(node.get_length('-wsmatrix-dot-size'));
+        const size = Math.round(node.get_length('-wsmatrix-dot-size'));
+        const columnSpacing = Math.round(node.get_length('-wsmatrix-column-spacing'));
+        let height = Math.round(node.get_length('-wsmatrix-dot-height'));
         let rowSpacing = Math.round(node.get_length('-wsmatrix-row-spacing'));
-        let columnSpacing = Math.round(node.get_length('-wsmatrix-column-spacing'));
 
         // The bar's CSS height: asking the panel for its size would ask us again.
         const maxHeight = Math.floor(Main.panel.get_theme_node().get_height() * MAX_HEIGHT_SHARE);
-        // Tighten the rows first, then shrink the dots.
-        while (rows * size + (rows - 1) * rowSpacing > maxHeight) {
-            if (rowSpacing > MIN_SPACING && rowSpacing * 2 >= size)
+        // Tighten the rows down to the ring's reach, flatten the dots, then tighten further.
+        while (rows * height + (rows - 1) * rowSpacing > maxHeight) {
+            if (rowSpacing > RING_SPREAD)
                 rowSpacing--;
-            else if (size > MIN_DOT_SIZE)
-                size--;
+            else if (height > MIN_DOT_HEIGHT)
+                height--;
+            else if (rowSpacing > MIN_SPACING)
+                rowSpacing--;
             else
                 break;
         }
-        // Keep columns a little wider apart than rows.
-        columnSpacing = Math.min(columnSpacing, rowSpacing + 2);
         return {
-            columns, size, rowSpacing, columnSpacing,
+            columns, size, height, rowSpacing, columnSpacing,
             width: columns * size + (columns - 1) * columnSpacing,
-            height: rows * size + (rows - 1) * rowSpacing,
+            totalHeight: rows * height + (rows - 1) * rowSpacing,
         };
     }
 
@@ -186,8 +188,8 @@ class GridIndicator extends St.Widget {
     }
 
     vfunc_get_preferred_height(_forWidth) {
-        const {height} = this._metrics();
-        return this.get_theme_node().adjust_preferred_height(height, height);
+        const {totalHeight} = this._metrics();
+        return this.get_theme_node().adjust_preferred_height(totalHeight, totalHeight);
     }
 
     vfunc_allocate(box) {
@@ -195,21 +197,21 @@ class GridIndicator extends St.Widget {
         const content = this.get_theme_node().get_content_box(box);
         const m = this._metrics();
         const x0 = Math.round(content.x1 + (content.get_width() - m.width) / 2);
-        const y0 = Math.round(content.y1 + (content.get_height() - m.height) / 2);
-        this._pitch = [m.size + m.columnSpacing, m.size + m.rowSpacing];
+        const y0 = Math.round(content.y1 + (content.get_height() - m.totalHeight) / 2);
+        this._pitch = [m.size + m.columnSpacing, m.height + m.rowSpacing];
 
-        const cellBox = (column, row, spread = 0) => {
+        const cellBox = (column, row, spreadX = 0, spreadY = 0) => {
             const b = new Clutter.ActorBox();
-            b.set_origin(x0 + column * this._pitch[0] - spread, y0 + row * this._pitch[1] - spread);
-            b.set_size(m.size + 2 * spread, m.size + 2 * spread);
+            b.set_origin(x0 + column * this._pitch[0] - spreadX, y0 + row * this._pitch[1] - spreadY);
+            b.set_size(m.size + 2 * spreadX, m.height + 2 * spreadY);
             return b;
         };
 
-        const inset = m.size >= MIN_INSET_SIZE ? INACTIVE_INSET : 0;
+        const inset = m.height >= MIN_INSET_SIZE ? INACTIVE_INSET : 0;
         this._dots.forEach((dot, i) => {
             const b = cellBox(i % m.columns, Math.floor(i / m.columns));
             b.set_origin(b.x1 + inset, b.y1 + inset);
-            b.set_size(m.size - 2 * inset, m.size - 2 * inset);
+            b.set_size(m.size - 2 * inset, m.height - 2 * inset);
             dot.allocate(b);
         });
         // Dots on their way out keep their last place.
@@ -219,10 +221,10 @@ class GridIndicator extends St.Widget {
         }
 
         // The ring sits on cell (0, 0) and glides by translation.
-        const thin = m.size < THIN_RING_BELOW;
-        this._ring.set_style(thin ? 'border-width: 1px;' : null);
-        this._ring.visible = m.size >= MIN_INSET_SIZE;
-        this._ring.allocate(cellBox(0, 0, thin ? 1 : RING_SPREAD));
+        const spreadY = Math.min(RING_SPREAD, m.rowSpacing);
+        const width = Math.clamp(spreadY + inset - 1, 1, RING_WIDTH);
+        this._ring.set_style(`border-width: ${width}px;`);
+        this._ring.allocate(cellBox(0, 0, RING_SPREAD, spreadY));
         if (this._snapRing || !this._ring.get_transition('translation-x')) {
             this._snapRing = false;
             this._ring.set(this._target());

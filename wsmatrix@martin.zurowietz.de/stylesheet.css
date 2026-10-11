@@ -46,9 +46,10 @@
 
 /* Workspace grid inside the Activities button, styled like the shell's workspace dots. */
 #panel .panel-button#panelActivities .wsmatrix-panel-grid {
-    padding: 0 0.2045em;
-    -wsmatrix-dot-size: 6px;
-    -wsmatrix-row-spacing: 3px;
+    padding: 0 6px;
+    -wsmatrix-dot-size: 14px;
+    -wsmatrix-dot-height: 8px;
+    -wsmatrix-row-spacing: 4px;
     -wsmatrix-column-spacing: 4px;
 }
 
@@ -59,7 +60,7 @@
 
 #panel .panel-button#panelActivities .wsmatrix-panel-ring {
     border-radius: 999px;
-    border: 2px solid #ffffff;
+    border: 3px solid #ffffff;
 }
 
 #panel:overview .panel-button#panelActivities .wsmatrix-panel-dot {
