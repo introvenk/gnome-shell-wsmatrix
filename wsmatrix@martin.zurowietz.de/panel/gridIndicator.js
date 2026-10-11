@@ -1,4 +1,5 @@
 import Clutter from 'gi://Clutter';
+import GLib from 'gi://GLib';
 import GObject from 'gi://GObject';
 import Graphene from 'gi://Graphene';
 import Meta from 'gi://Meta';
@@ -10,6 +11,9 @@ import {switchFollower} from '../workspacePopup/workspaceAnimation.js';
 const EMPTY_OPACITY = 0.35;
 const OCCUPIED_OPACITY = 0.6;
 const GLIDE_TIME = 250;
+// Resting the pointer this long on the grid shows the switcher as a preview, so passing
+// over it on the way elsewhere doesn't.
+const PREVIEW_DELAY = 300;
 const SCALE_TIME = 500;
 // Share of the top bar's height the grid may use, about the height of the button's
 // highlight. Larger grids fit by flattening dots into short bars, down to MIN_DOT_HEIGHT,
@@ -85,6 +89,7 @@ class GridIndicator extends St.Widget {
             style_class: 'wsmatrix-panel-grid',
             y_align: Clutter.ActorAlign.CENTER,
             reactive: true,
+            track_hover: true,
         });
         this._manager = manager;
         this._workspaces = [];
@@ -105,6 +110,8 @@ class GridIndicator extends St.Widget {
         });
         scroll.connect('scroll', (_c, _sprite, _source, dx, dy) => this._onScroll(dx, dy));
         this.add_action(scroll);
+        this.connect('notify::hover', () => this._onHover());
+        Main.overview.connectObject('showing', () => this._closePreview(), this);
 
         global.workspace_manager.connectObject(
             'notify::n-workspaces', () => this.rebuild(),
@@ -121,6 +128,8 @@ class GridIndicator extends St.Widget {
         this._activities.insert_child_at_index(this, 0);
         this.connect('destroy', () => {
             switchFollower.onProgress = null;
+            this._closePreview();
+            Main.overview.disconnectObject(this);
             global.workspace_manager.disconnectObject(this);
             this._workspaces.forEach(w => w.disconnectObject(this));
             this._activities.accessible_description = this._nativeDescription;
@@ -297,6 +306,28 @@ class GridIndicator extends St.Widget {
         this._activities.accessible_description =
             `Workspace ${active + 1} of ${workspaceManager.n_workspaces}, ` +
             `row ${Math.floor(active / columns) + 1}, column ${active % columns + 1}`;
+    }
+
+    _onHover() {
+        if (!this.hover) {
+            this._closePreview();
+            return;
+        }
+        this._previewId ??= GLib.timeout_add(GLib.PRIORITY_DEFAULT, PREVIEW_DELAY, () => {
+            this._previewId = null;
+            this._previewing = true;
+            this._manager._showWorkspaceSwitcherPopup(false, true, false);
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    _closePreview() {
+        if (this._previewId)
+            GLib.source_remove(this._previewId);
+        this._previewId = null;
+        if (this._previewing)
+            this._manager._destroyWorkspaceSwitcherPopup();
+        this._previewing = false;
     }
 
     _onScroll(dx, dy) {

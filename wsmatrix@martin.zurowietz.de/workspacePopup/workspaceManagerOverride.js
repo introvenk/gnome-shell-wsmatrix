@@ -512,7 +512,7 @@ export default class WorkspaceManagerOverride {
     }
 
 
-    _showWorkspaceSwitcherPopup(toggle, passive = false) {
+    _showWorkspaceSwitcherPopup(toggle, passive = false, timeout = true) {
         if (Main.overview.visible || !this.settings.get_boolean('show-popup')) {
             return;
         }
@@ -549,7 +549,7 @@ export default class WorkspaceManagerOverride {
 
                 if (passive) {
                     // After a swipe: no modal grab, or it would swallow the next swipe.
-                    popup.showPassive();
+                    popup.showPassive(timeout);
                 } else if (monitorIndex !== Main.layoutManager.primaryIndex) {
                     // One grab for all monitors: a second one would take the mouse (#224).
                     popup.showPassive(false);

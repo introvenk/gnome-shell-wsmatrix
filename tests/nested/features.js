@@ -71,5 +71,12 @@ function scenario(ext, T) {
             settings.set_int('num-columns', columnsBefore);
         }],
         [11400, () => T.expect('dots scale out and go', indicator()._dots.length, rowsBefore * columnsBefore)],
+        [11500, () => indicator().set_hover(true)],
+        [12100, () => {
+            T.expect('resting on the grid previews the switcher', !!T.popup(), true);
+            T.shot('panel-preview');
+        }],
+        [12200, () => indicator().set_hover(false)],
+        [12900, () => T.expect('leaving the grid closes the preview', !!T.popup(), false)],
     ];
 }
