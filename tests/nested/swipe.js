@@ -36,6 +36,7 @@ function scenario(ext, T) {
             const indicator = T.main.panel.statusArea.activities.get_first_child();
             const ring = indicator._ring;
             T.expect('the ring follows a swipe half-way', ring.translation_x, indicator._pitch[0] / 2);
+            T.expect('the ring stretches between the cells', indicator._stretch[0] > 0, true);
             tracker.emit('end', 0, points[0]);
         }],
         [3000, () => swipe(ctl()._swipeTracker)],

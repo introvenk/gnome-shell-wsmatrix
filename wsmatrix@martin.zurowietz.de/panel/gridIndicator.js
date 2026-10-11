@@ -28,6 +28,9 @@ const MIN_INSET_SIZE = 5;
 // tighter it reaches less far and thins to keep a pixel of space around the dot.
 const RING_SPREAD = 3;
 const RING_WIDTH = 3;
+// Half-way between two cells the ring stretches by this share of a cell on each side,
+// reaching toward both, like the shell's active dot widening as it moves.
+const RING_STRETCH = 0.25;
 
 function reducedMotion() {
     return St.Settings.get().reducedMotion === St.ReducedMotion.REDUCE;
@@ -87,6 +90,8 @@ class GridIndicator extends St.Widget {
         this._workspaces = [];
         this._dots = [];
         this._pitch = [1, 1];
+        this._stretch = [0, 0];
+        this._following = false;
 
         this._ring = new St.Widget({style_class: 'wsmatrix-panel-ring'});
         this._ring.connect('notify::translation-x', () => this._updateDots());
@@ -228,8 +233,9 @@ class GridIndicator extends St.Widget {
         const spreadY = Math.min(RING_SPREAD, m.rowSpacing);
         const width = Math.clamp(spreadY + inset - 1, 1, RING_WIDTH);
         this._ring.set_style(`border-width: ${width}px;`);
-        this._ring.allocate(cellBox(0, 0, RING_SPREAD, spreadY));
-        if (this._snapRing || !this._ring.get_transition('translation-x')) {
+        const [stretchX, stretchY] = this._stretch;
+        this._ring.allocate(cellBox(0, 0, RING_SPREAD + stretchX, spreadY + stretchY));
+        if (this._snapRing || (!this._following && !this._ring.get_transition('translation-x'))) {
             this._snapRing = false;
             this._ring.set(this._target());
         }
@@ -246,6 +252,10 @@ class GridIndicator extends St.Widget {
 
     _follow(column, row) {
         this._ring.remove_all_transitions();
+        this._following = true;
+        this._stretch = [column, row].map((v, i) =>
+            Math.round(Math.sin(Math.PI * (v - Math.floor(v))) * RING_STRETCH * this._pitch[i]));
+        this.queue_relayout();
         this._ring.set({
             translation_x: column * this._pitch[0],
             translation_y: row * this._pitch[1],
@@ -254,6 +264,9 @@ class GridIndicator extends St.Widget {
 
     _glideToActive() {
         this._ring.remove_all_transitions();
+        this._following = false;
+        this._stretch = [0, 0];
+        this.queue_relayout();
         this._ring.ease({
             ...this._target(),
             duration: reducedMotion() ? 0 : GLIDE_TIME,
