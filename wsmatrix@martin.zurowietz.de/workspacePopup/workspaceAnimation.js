@@ -5,12 +5,17 @@ import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
 import St from 'gi://St';
 import {SwipeTracker} from 'resource:///org/gnome/shell/ui/swipeTracker.js';
+import * as Util from 'resource:///org/gnome/shell/misc/util.js';
 import {
     WORKSPACE_SPACING,
     WorkspaceGroup,
     WorkspaceAnimationController as GWorkspaceAnimationController,
     MonitorGroup as GMonitorGroup,
 } from 'resource:///org/gnome/shell/ui/workspaceAnimation.js';
+
+// Told where a switch or swipe is, in grid cells, on every frame, so the Activities
+// grid can follow it like the shell's own workspace dots do.
+export const switchFollower = {onProgress: null};
 
 // Subclass of the native MonitorGroup that lays out the workspaces as a grid instead of a
 // single row/column. Everything else (swipe interpolation, workspaces adjustment, ...) is
@@ -115,6 +120,21 @@ class MonitorGroup extends GMonitorGroup {
             this._container.x = Math.round(p * this.baseDistanceX);
 
         this.notify('progress');
+        if (this._monitor.index === Main.layoutManager.primaryIndex)
+            this._reportCell(p);
+    }
+
+    _reportCell(progress) {
+        const groups = this._workspaceGroups;
+        if (!switchFollower.onProgress || !groups?.length)
+            return;
+        const p = Math.clamp(progress, 0, groups.length - 1);
+        const columns = global.workspace_manager.layout_columns;
+        const [from, to] = [groups[Math.floor(p)], groups[Math.ceil(p)]].map(g => g.workspace.index());
+        const t = p - Math.floor(p);
+        switchFollower.onProgress(
+            Util.lerp(from % columns, to % columns, t),
+            Util.lerp(Math.floor(from / columns), Math.floor(to / columns), t));
     }
 
     _getWorkspaceGroupProgress(group) {

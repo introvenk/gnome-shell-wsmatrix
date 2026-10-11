@@ -26,6 +26,18 @@ function scenario(ext, T) {
             original = shellTracker();
             T.expect('the shell swipe tracker is muted', original._allowedModes, 0);
         }],
+        [2800, () => {
+            // Mid-swipe the Activities ring sits between the two cells, like the shell's dots.
+            const tracker = ctl()._swipeTracker;
+            tracker.emit('begin', 0);
+            const group = ctl()._switchData.baseMonitorGroup;
+            const points = group.getSnapPoints();
+            tracker.emit('update', (points[0] + points[1]) / 2);
+            const indicator = T.main.panel.statusArea.activities.get_first_child();
+            const ring = indicator._ring;
+            T.expect('the ring follows a swipe half-way', ring.translation_x, indicator._pitch[0] / 2);
+            tracker.emit('end', 0, points[0]);
+        }],
         [3000, () => swipe(ctl()._swipeTracker)],
         [3400, () => T.expect('horizontal swipe moves one column', T.active(), 1)],
         [3450, () => T.expect('a popup follows the swipe', !!T.popup(), true)],

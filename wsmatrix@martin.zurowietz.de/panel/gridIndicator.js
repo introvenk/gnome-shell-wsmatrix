@@ -4,6 +4,7 @@ import Graphene from 'gi://Graphene';
 import Meta from 'gi://Meta';
 import St from 'gi://St';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import {switchFollower} from '../workspacePopup/workspaceAnimation.js';
 
 // Same look and motion as the shell's own workspace dots (panel.js).
 const EMPTY_OPACITY = 0.35;
@@ -109,9 +110,12 @@ class GridIndicator extends St.Widget {
         this._nativeDots = this._activities.get_first_child();
         this._nativeDots.hide();
         this._nativeDescription = this._activities.accessible_description;
+        // Track switches and swipes frame by frame; the glide covers switches without one.
+        switchFollower.onProgress = (column, row) => this._follow(column, row);
         // The button lays out only its first child.
         this._activities.insert_child_at_index(this, 0);
         this.connect('destroy', () => {
+            switchFollower.onProgress = null;
             global.workspace_manager.disconnectObject(this);
             this._workspaces.forEach(w => w.disconnectObject(this));
             this._activities.accessible_description = this._nativeDescription;
@@ -238,6 +242,14 @@ class GridIndicator extends St.Widget {
             translation_x: (active % columns) * this._pitch[0],
             translation_y: Math.floor(active / columns) * this._pitch[1],
         };
+    }
+
+    _follow(column, row) {
+        this._ring.remove_all_transitions();
+        this._ring.set({
+            translation_x: column * this._pitch[0],
+            translation_y: row * this._pitch[1],
+        });
     }
 
     _glideToActive() {
