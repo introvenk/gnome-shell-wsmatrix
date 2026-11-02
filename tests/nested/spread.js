@@ -46,7 +46,6 @@ function scenario(ext, T) {
         [5300, () => {
             T.expect('a workspace with two windows gets a spread cell', kind(0), 'SpreadWorkspace');
             T.expect('a workspace with one window keeps its thumbnail', kind(1), 'WorkspaceThumbnail');
-            T.expect('an empty workspace keeps its dot', buttons()[2]._emptyDot.visible, true);
             T.shot('spread-popup');
         }],
         [5350, () => {

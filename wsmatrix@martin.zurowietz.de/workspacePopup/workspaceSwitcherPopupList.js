@@ -66,7 +66,6 @@ export default GObject.registerClass({
         }
 
         this._items = [];
-        this._workspaces = thumbnails.map(t => t.metaWorkspace);
 
         // connectObject disconnects on destroy, also when the popup is destroyed from C.
         let workspaceManager = global.workspace_manager;
@@ -110,19 +109,6 @@ export default GObject.registerClass({
             }));
             container.add_child(labelBox);
         }
-
-        // Faint dot marking a workspace without windows.
-        bbox._emptyDot = new St.Widget({
-            style_class: 'ws-switcher-empty-dot',
-            x_expand: true,
-            y_expand: true,
-            x_align: Clutter.ActorAlign.CENTER,
-            y_align: Clutter.ActorAlign.CENTER,
-        });
-        let dotBox = new SwitcherButton(this._childWidth, this._childHeight);
-        dotBox.set_child(bbox._emptyDot);
-        dotBox.reactive = false;
-        container.add_child(dotBox);
 
         bbox.set_child(container);
         list.add_child(bbox);
@@ -183,6 +169,8 @@ export default GObject.registerClass({
         return Clutter.EVENT_PROPAGATE;
     }
 
+    // Cells stay fully opaque: dimming them faded each window separately, so the wallpaper
+    // showed through the windows.
     highlight(index, justOutline) {
         if (this._items[this._highlighted]) {
             this._items[this._highlighted].remove_style_pseudo_class('highlighted');
@@ -195,18 +183,8 @@ export default GObject.registerClass({
 
         const changed = this._highlighted !== index;
         this._highlighted = index;
-        this._updateEmptyDots();
         if (changed)
             this.emit('highlight-changed', index);
-    }
-
-    // Cells stay fully opaque: dimming them faded each window separately, so the wallpaper
-    // showed through the windows.
-    _updateEmptyDots() {
-        this._items.forEach((item, i) => {
-            const ws = this._workspaces[i];
-            item._emptyDot.visible = !!ws && !ws.list_windows().some(w => !w.is_on_all_workspaces());
-        });
     }
 
     _itemActivated(n) {
