@@ -13,7 +13,7 @@
 | `overview` | Drop targets and clicks on every row, strip height, which rows are shown and clipped, app grid |
 | `swipe` | Horizontal and vertical swipes, the Activities ring following a swipe, the popup after a swipe, restoring GNOME's gestures |
 | `features` | Ctrl+Alt+number and Ctrl+Alt+BackSpace through a virtual keyboard; the grid of dots in the Activities button: ring position, screen-reader text, fitting a 5×5 grid, dots scaling in and out |
-| `spread` | Opens real windows: a workspace with two windows gets a spread cell with icons and no titles, windows don't overlap, the cell's button keeps the pointer, one-window and empty cells are unchanged, moving a window in or out while the popup is open swaps the cells, the setting switches it off |
+| `spread` | Opens real windows: a workspace with two windows gets a spread cell with icons and no titles, windows don't overlap, the cell's button keeps the pointer, one-window and empty cells are unchanged, moving a window in or out while the popup is open swaps the cells, a window carried across several workspaces is left in none of the cells it passed, the setting switches it off |
 | `multimonitor` | Run with `MONITORS=2`: one grab for all popups, closing one closes all, overview grid on the second monitor (#224, #253, #255) |
 
 Requirements:
@@ -75,7 +75,7 @@ Run these after logging back in on a new build.
 
 **Spread windows**
 
-28. With a dark editor maximised over a terminal on one workspace, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+arrow shows both side by side in that cell, each with its app icon and no title. A workspace with one window looks as before. With the popup open, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+arrow onto a workspace with one window spreads that cell straight away, and the cell left with one window goes back to a thumbnail. Turning "Spread out windows in popup" off brings back the stacked thumbnail.
+28. With a dark editor maximised over a terminal on one workspace, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+arrow shows both side by side in that cell, each with its app icon and no title. A workspace with one window looks as before. With the popup open, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>Shift</kbd>+arrow onto a workspace with one window spreads that cell straight away, and the cell left with one window goes back to a thumbnail without a copy of the moved window. Keep pressing to carry the window across the grid: it shows only in the cell it is on. Turning "Spread out windows in popup" off brings back the stacked thumbnail.
 
 **Second monitor**
 

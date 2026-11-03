@@ -94,6 +94,8 @@ function scenario(ext, T) {
             T.expect('a window moved onto a one-window workspace spreads that cell', kind(1), 'SpreadWorkspace');
             T.expect('the moved window is in the spread cell', content(1)._windows?.length, 2);
             T.expect('the workspace left with one window gets its thumbnail back', kind(0), 'WorkspaceThumbnail');
+            T.expect('the moved window is gone from the cell it left',
+                content(0)._windows.map(c => c.metaWindow.get_title()), ['B']);
             T.expect('the new spread cell is scaled to fit its button', fill(1) > 0.8 && fill(1) <= 1, true);
             T.shot('spread-after-move');
         }],
@@ -101,34 +103,46 @@ function scenario(ext, T) {
         [8200, () => {
             T.expect('moving the window back swaps both cells back', [kind(0), kind(1)],
                 ['SpreadWorkspace', 'WorkspaceThumbnail']);
+            T.expect('the cell the window left back shows only its own window',
+                content(1)._windows.map(c => c.metaWindow.get_title()), ['C']);
+        }],
+        // Carrying a window across several workspaces leaves no copy of it behind.
+        [8250, () => move('A', 'right')],
+        [8500, () => move('A', 'right')],
+        [8750, () => move('A', 'right')],
+        [9200, () => {
+            T.expect('the carried window is only in the cell it ended up in',
+                cells().map((_, i) => content(i)._windows.some(c => c.metaWindow.get_title() === 'A')),
+                cells().map((_, i) => i === window('A')?.get_workspace().index()));
             closePopup();
+            window('A')?.change_workspace_by_index(0, false);
         }],
         // A window on all workspaces is shown in every spread cell but doesn't count towards one.
-        [8300, () => ['S', 'D'].forEach(open)],
-        [10300, () => {
+        [9300, () => ['S', 'D'].forEach(open)],
+        [11300, () => {
             window('D')?.change_workspace_by_index(1, false);
             window('S')?.stick();
         }],
-        [10500, () => {
+        [11500, () => {
             delegates = [window('S')?._delegate];
             openPopup();
         }],
-        [11000, () => {
+        [12000, () => {
             T.expect('two spread cells share the window on all workspaces', [kind(0), kind(1),
                 content(0)._windows.length, content(1)._windows.length],
             ['SpreadWorkspace', 'SpreadWorkspace', 3, 3]);
             closePopup();
         }],
-        [11300, () => T.expect('the window on all workspaces gets its delegate back',
+        [12300, () => T.expect('the window on all workspaces gets its delegate back',
             window('S')?._delegate === delegates[0], true)],
-        [11400, () => {
+        [12400, () => {
             window('D')?.change_workspace_by_index(0, false);
             openPopup();
         }],
-        [11900, () => {
+        [12900, () => {
             T.expect('a window on all workspaces does not make a cell spread', kind(1), 'WorkspaceThumbnail');
             closePopup();
         }],
-        [12500, () => procs.forEach(p => p.force_exit())],
+        [13500, () => procs.forEach(p => p.force_exit())],
     ];
 }

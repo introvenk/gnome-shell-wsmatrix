@@ -41,6 +41,10 @@ class WorkspaceCell extends Clutter.Actor {
 
         this.view?.destroy();
         this.view = this._create(spread);
+        // The new view picked up the leaving window from the list, and its own removal
+        // handler came too late to see this signal, so the window would stay in the cell.
+        if (leaving)
+            this.view._doRemoveWindow(leaving);
         this.add_child(this.view);
         this._applyScale();
     }
